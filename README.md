@@ -1,3 +1,4 @@
 # RGenomeGcode  
 Miguel Sautié
-Methods to compute GC robustness, next version in 6 hrs
+Methods to compute GC and genome robustness
+code under development
