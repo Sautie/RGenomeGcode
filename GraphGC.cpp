@@ -1,5 +1,8 @@
 #include <iostream>
+#include <fstream>
 #include <cmath>
+#include <algorithm>
+#include <set>
 #include "GraphGC.h"
 using namespace std;
 
@@ -80,6 +83,27 @@ GraphGC& GraphGC::operator=(const GraphGC& g)
                   phenoM[i][j] = d;
                   phenoM[j][i] = d;
     }
+ void GraphGC::clearD() {
+   for (int i = 0; i < vertices; i++){
+    for (int ii = 0; ii < vertices; ii++) phenoM[i][ii] = 0;
+     }
+  }
+void GraphGC::clearW() {
+   for (int i = 0; i < vertices; i++){
+    for (int ii = 0; ii < vertices; ii++) geneM[i][ii] = 0;
+     }
+  }
+void GraphGC::toADJL()
+ {
+    for (int i = 0; i < vertices; i++){
+      for (int ii = i+1; ii < vertices; ii++) {
+        if (geneM[i][ii]>0){
+            adL[i].push_back(ii);
+            adL[ii].push_back(i);
+                      }
+        }
+     }
+}
 
  void GraphGC::setWeight(int i, int j, double w=0) {
                   weights[i][j]=w;
@@ -146,7 +170,7 @@ vector< vector<int> > GraphGC::PairCompGC(vector<int> AAGCnum1, vector<int> AAGC
 bool GraphGC::STOP(char a, char b) {
        return ((a=='*')||(b=='*'));
     }
-bool GraphGC::METRP(int c, int cc, vector< float >& Rscv){
+bool GraphGC::METRP(int c, int cc, vector< double > Rscv){
        return ((Rscv[c]==1)||(Rscv[cc]==1));
     }
 bool GraphGC::transition(char a, char b) {
@@ -185,6 +209,7 @@ vector<double> GraphGC::P20ToP64(string gc, vector<double> Paa20){
            }
   return Paa64;
      }
+
 CodeN GraphGC::CodeNbd(vector<int> AAGCnum){
    vector<  vector<int> > L (vertices, vector<int>(6, 0));
    vector<int> B;
@@ -542,6 +567,44 @@ vector< double> GraphGC::standarize(vector< double> Paa){
      return Paa;
   }
 
+void GraphGC::AP1(int j, bool vis[], int dis[], int l[], int par[], bool ap[]) {
+   static int t=0;
+   int child = 0;
+   vis[j] = true;
+   dis[j] = l[j] = ++t;
+   list<int>::iterator i;
+   for (i = adL[j].begin(); i != adL[j].end(); ++i) {
+      int ii = *i;
+      if (!vis[ii]) {
+         child++;
+         par[ii] = j;
+         AP1(ii, vis, dis, l, par, ap);
+         l[j] = (l[j] < l[ii]) ? l[j] : l[ii];
+         if (par[j] == -1 && child> 1)
+            ap[j] = true;
+         if (par[j] != -1 && l[ii] >= dis[j])
+            ap[j] = true;
+      } else if (ii != par[j])
+         l[j] = min(l[j], dis[ii]);
+   }
+}
+
+bool* GraphGC::APN() {
+   bool *vis = new bool[vertices];
+   int *dis = new int[vertices];
+   int *l = new int[vertices];
+   int *par = new int[vertices];
+   bool *ap = new bool[vertices];
+   for (int i = 0; i < vertices; i++) {
+      par[i] = -1;
+      vis[i] = false;
+      ap[i] = false;
+   }
+   for (int i = 0; i < vertices; i++)
+      if (vis[i] == false)
+         AP1(i, vis, dis, l, par, ap);
+     return ap;
+}
 void GraphGC::print() {
       cout <<"Genetic Matrix"<<endl;
       for (int i = 0; i < vertices; i++) {
@@ -558,6 +621,484 @@ void GraphGC::print() {
                   cout << "\n";
       }
     }
+
+vector< double > GraphGC::permGenCodes(string alp, const vector <double>  &CodBias, const vector <double>  &Faas, const vector <double>  &Paa, const vector <string> &GCodes) {
+
+  int codonpos=0;
+  pair<int,char> po, po2;
+  double spaa=0,sp1=0, sp2=0, sp3=0, sumt1=0, sumt2=0,sumt3=0;
+  double sumd1=0, sumd2=0,sumd3=0;
+
+  int w, mt, nt=0, nt1=0, nt2=0, nt3=0;
+  int nts1=0, nts2=0, nts3=0;
+  int ntt=0, ntt1=0, ntt2=0, ntt3=0;
+  int ntts1=0, ntts2=0, ntts3=0;
+
+   double transd=0, transf=0;
+   double tranvd=0,tranvf=0;
+   int trans=0, tranv=0;
+  int transs=0, tranvv=0;
+
+  double dstop=0, sumt2stop=0, sumt1stop=0, sumt3stop=0, sp1stop=0, sp2stop=0,sp3stop=0;
+  double spaaStop=0, transfStop=0, transdStop=0, tranvfStop=0, tranvdStop=0;
+
+    set < int > aaconnected, aasconnected;
+  int saa=0, sas=0;
+  double d, da1, da2;
+  vector <double> Paa64;
+  Paa64=P20ToP64(GCodes[0], Paa);
+
+ for (unsigned int i = 0; i < GCodes[0].size(); i++)
+   {
+    po=AAnIdentify(i, alp);
+    for (unsigned int ii = 0; ii < GCodes[0].size(); ii++)
+     {
+              po2=AAnIdentify(ii, alp);
+
+              da1=Paa[po.first];
+              da2=Paa[po2.first];
+              dstop=((da1-da2)*(da1-da2));
+
+    if (GCodes[0][i]!=GCodes[0][ii]) {
+
+       if (((codonpos==3)||(codonpos==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]!=GCodes[4][ii])){
+                  if (transition(GCodes[4][i], GCodes[4][ii])){
+                        if (STOP(GCodes[0][i], GCodes[0][ii])) d=0; //* or *  model cg20
+                        else {
+                            d=((Paa[po.first]-Paa[po2.first])*(Paa[po.first]-Paa[po2.first]));
+                            trans=trans+1;
+                            } //model cg20
+                       if (METRP(i, ii, CodBias)) mt=0;
+                          else mt=1;
+
+                       sumt3=sumt3+((CodBias[i])*d*mt);  //(this->weights[2][0])*
+                       sp3=sp3+((weights[2][0])*(CodBias[i])*d*mt);
+                       spaa=spaa+(weights[2][0])*Faas[i]*d*mt;
+                        transf=transf+((CodBias[i])*d*mt); //******
+                       transd=transd+((weights[2][0])*(CodBias[i])*d*mt); //******
+
+                       sumt3stop=sumt3stop+((CodBias[i])*dstop*mt);  //(this->weights[2][0])*
+                       sp3stop=sp3stop+((weights[2][0])*(CodBias[i])*dstop*mt);//
+                       spaaStop=spaaStop+(weights[2][0])*Faas[i]*dstop*mt;
+                        transfStop=transfStop+((CodBias[i])*dstop*mt); //******
+                       transdStop=transdStop+((weights[2][0])*(CodBias[i])*dstop*mt); //*******
+
+                       transs=transs+1;
+
+                                           }
+                  if (transversion(GCodes[4][i], GCodes[4][ii])){
+                      if (STOP(GCodes[0][i], GCodes[0][ii])) d=0; //* or *
+                        else {
+                                d=((Paa[po.first]-Paa[po2.first])*(Paa[po.first]-Paa[po2.first]));
+                                tranv=tranv+1;
+                                         }
+                     if (METRP(i, ii, CodBias)) mt=0;
+                          else mt=1;
+
+                       sumt3=sumt3+((CodBias[i])*d*mt);
+                       sp3=sp3+((weights[2][1])*(CodBias[i])*d*mt);
+                        spaa=spaa+(weights[2][1])*Faas[i]*d*mt;
+                        tranvf=tranvf+((CodBias[i])*d*mt); //******
+                       tranvd=tranvd+((weights[2][1])*(CodBias[i])*d*mt); //******
+                       tranvv=tranvv+1;
+
+                     sumt3stop=sumt3stop+((CodBias[i])*dstop*mt);
+                       sp3stop=sp3stop+((weights[2][1])*(CodBias[i])*dstop*mt);//
+                       spaaStop=spaaStop+(weights[2][1])*Faas[i]*dstop*mt;
+                        tranvfStop=tranvfStop+((CodBias[i])*dstop*mt); //******
+                       tranvdStop=tranvdStop+((weights[2][1])*(CodBias[i])*dstop*mt); //****/
+                                                      }
+                      nts3=nts3+1;
+                      if (!(STOP(GCodes[0][i], GCodes[0][ii]))) {
+                        aaconnected.insert(po2.second);
+                         nt3=nt3+1;
+                                }
+                      aasconnected.insert(po2.second);
+              }
+       if (((codonpos==2)||(codonpos==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[3][i]!=GCodes[3][ii])) {
+
+                 if (transition(GCodes[3][i], GCodes[3][ii])){
+                     if (STOP(GCodes[0][i], GCodes[0][ii])) d=0;
+                        else {
+                            d=((Paa[po.first]-Paa[po2.first])*(Paa[po.first]-Paa[po2.first]));
+                            trans=trans+1; }
+                     if (METRP(i, ii, CodBias)) mt=0;
+                          else mt=1;
+
+                       sumt2=sumt2+((CodBias[i])*d*mt);
+                       sp2=sp2+((weights[1][0])*(CodBias[i])*d*mt);
+                       spaa=spaa+(weights[1][0])*Faas[i]*d*mt;
+                       transf=transf+((CodBias[i])*d*mt); //******
+                       transd=transd+((weights[1][0])*(CodBias[i])*d*mt); //******
+                       transs=transs+1;
+
+                       sumt2stop=sumt2stop+((CodBias[i])*dstop*mt);  //(this->weights[2][0])*
+                       sp2stop=sp2stop+((weights[1][0])*(CodBias[i])*dstop*mt);//*
+                       spaaStop=spaaStop+(weights[1][0])*Faas[i]*dstop*mt;
+                        transfStop=transfStop+((CodBias[i])*dstop*mt); //******
+                       transdStop=transdStop+((weights[1][0])*(CodBias[i])*dstop*mt); //******/
+                               }
+                 if (transversion(GCodes[3][i], GCodes[3][ii])){
+                    if (STOP(GCodes[0][i], GCodes[0][ii])) d=0; //* or *
+                        else {
+                                d=((Paa[po.first]-Paa[po2.first])*(Paa[po.first]-Paa[po2.first]));
+                                tranv=tranv+1;
+                                         }
+                         if (METRP(i, ii, CodBias)) mt=0;
+                          else mt=1;
+
+                         sumt2=sumt2+((CodBias[i])*d*mt);
+                         sp2=sp2+((weights[1][1])*(CodBias[i])*d*mt);
+                           spaa=spaa+(weights[1][1])*Faas[i]*d*mt;
+                        tranvf=tranvf+((CodBias[i])*d*mt); //******
+                       tranvd=tranvd+((weights[1][1])*(CodBias[i])*d*mt); //******
+                       tranvv=tranvv+1;
+
+                      sumt2stop=sumt2stop+((CodBias[i])*dstop*mt);
+                       sp2stop=sp2stop+((weights[1][1])*(CodBias[i])*dstop*mt);//*
+                       spaaStop=spaaStop+(weights[1][1])*Faas[i]*dstop*mt;
+                        tranvfStop=tranvfStop+((CodBias[i])*dstop*mt); //******
+                       tranvdStop=tranvdStop+((weights[1][1])*(CodBias[i])*dstop*mt); //******/
+                               }
+                  nts2=nts2+1;
+                  if (!(STOP(GCodes[0][i], GCodes[0][ii]))) {
+                      aaconnected.insert(po2.second); //cg20
+                    nt2=nt2+1;
+                                      }
+                 aasconnected.insert(po2.second); //cg21
+             }
+       if (((codonpos==1)||(codonpos==0))&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[2][i]!=GCodes[2][ii])) {
+                   if (transition(GCodes[2][i], GCodes[2][ii])){
+                     if (STOP(GCodes[0][i], GCodes[0][ii])) d=0; //* or *
+                        else {
+                            d=((Paa[po.first]-Paa[po2.first])*(Paa[po.first]-Paa[po2.first]));
+                            trans=trans+1; }
+                      if (METRP(i, ii, CodBias)) mt=0;
+                          else mt=1;
+                         sumt1=sumt1+((CodBias[i])*d*mt);
+                       sp1=sp1+((weights[0][0])*(CodBias[i])*d*mt);
+                        spaa=spaa+(weights[0][0])*Faas[i]*d*mt;
+                        transf=transf+((CodBias[i])*d*mt); //******
+                       transd=transd+((weights[0][0])*(CodBias[i])*d*mt); //******
+                       transs=transs+1;
+
+                      sumt1stop=sumt1stop+((CodBias[i])*dstop*mt);
+                       sp1stop=sp1stop+((weights[0][0])*(CodBias[i])*dstop*mt);//*
+                       spaaStop=spaaStop+(weights[0][0])*Faas[i]*dstop*mt;
+                       transfStop=transfStop+((CodBias[i])*dstop*mt); //******
+                       transdStop=transdStop+((weights[0][0])*(CodBias[i])*dstop*mt); //******/
+
+                        }
+                 if (transversion(GCodes[2][i], GCodes[2][ii])){
+                     if (STOP(GCodes[0][i], GCodes[0][ii])) d=0; //* or *
+                        else {
+                                d=((Paa[po.first]-Paa[po2.first])*(Paa[po.first]-Paa[po2.first]));
+                                tranv=tranv+1;
+                                         }
+                      if (METRP(i, ii, CodBias)) mt=0;
+                          else mt=1;
+                       sumt1=sumt1+((CodBias[i])*d*mt);
+                       sp1=sp1+((weights[0][1])*(CodBias[i])*d*mt);
+                       spaa=spaa+(weights[0][1])*Faas[i]*d*mt;
+                        tranvf=tranvf+((CodBias[i])*d*mt); //******
+                       tranvd=tranvd+((weights[0][1])*(CodBias[i])*d*mt); //******
+                       tranvv=tranvv+1;
+
+                       sumt1stop=sumt1stop+((CodBias[i])*dstop*mt);
+                       sp1stop=sp1stop+((weights[0][1])*(CodBias[i])*dstop*mt);//*
+                       spaaStop=spaaStop+(weights[0][1])*Faas[i]*dstop*mt;
+                       tranvfStop=tranvfStop+((CodBias[i])*dstop*mt); //******
+                       tranvdStop=tranvdStop+((weights[0][1])*(CodBias[i])*dstop*mt); //*****/
+
+                    }
+                  nts1=nts1+1;
+                    if (!(STOP(GCodes[0][i], GCodes[0][ii]))) {
+                         aaconnected.insert(po2.second);
+                        nt1=nt1+1;
+                                          }
+                       aasconnected.insert(po2.second);
+                }
+            }
+      else if ((GCodes[0][i]==GCodes[0][ii])&&(i!=ii)) {
+         if (METRP(i, ii, CodBias)) mt=0;
+                          else mt=1;
+       if (((codonpos==3)||(codonpos==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]!=GCodes[4][ii])){
+                 ntts3=ntts3+1;  //cg21 cg19
+
+                 if (!(STOP(GCodes[0][i], GCodes[0][ii]))){
+                       if (transversion(GCodes[4][i], GCodes[4][ii])) tranv=tranv+1;
+                       if (transition(GCodes[4][i], GCodes[4][ii]))  trans=trans+1;
+                        ntt3=ntt3+1; //cg20 cg18
+                        }//nor * //nor * and nor *
+                        if (transversion(GCodes[4][i], GCodes[4][ii])){
+                            tranvv=tranvv+1;
+                            sumt3stop=sumt3stop+((CodBias[i])*dstop*mt);  //(this->weights[2][0])*
+                            sp3stop=sp3stop+((weights[2][1])*(CodBias[i])*dstop*mt);//
+                            spaaStop=spaaStop+(weights[2][1])*Faas[i]*dstop*mt;
+                            tranvfStop=tranvfStop+((CodBias[i])*dstop*mt); //******
+                             tranvdStop=tranvdStop+((weights[2][1])*(CodBias[i])*dstop*mt); //****/
+                             }
+                       if (transition(GCodes[4][i], GCodes[4][i])){
+                            transs=transs+1;
+                            sumt3stop=sumt3stop+((CodBias[i])*dstop*mt);
+                            sp3stop=sp3stop+((weights[2][0])*(CodBias[i])*dstop*mt);//
+                            spaaStop=spaaStop+(weights[2][0])*Faas[i]*dstop*mt;
+                            transfStop=transfStop+((CodBias[i])*dstop*mt); //******
+                            transdStop=transdStop+((weights[2][0])*(CodBias[i])*dstop*mt); //****
+                       }
+        }
+       if (((codonpos==2)||(codonpos==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[3][i]!=GCodes[3][ii])) {
+                ntts2=ntts2+1;
+
+                if (!(STOP(GCodes[0][i], GCodes[0][ii]))){
+                       if (transversion(GCodes[3][i], GCodes[3][ii])) tranv=tranv+1;
+                       if (transition(GCodes[3][i], GCodes[3][ii]))  trans=trans+1;
+                        ntt2=ntt2+1;  }
+                        //nor *  //nor * and nor *
+                        if (transversion(GCodes[3][i], GCodes[3][ii])) {
+                             tranvv=tranvv+1;
+                                    sumt2stop=sumt2stop+((CodBias[i])*dstop*mt);
+                       sp2stop=sp2stop+((weights[1][1])*(CodBias[i])*dstop*mt);//*
+                       spaaStop=spaaStop+(weights[1][1])*Faas[i]*dstop*mt;
+                        tranvfStop=tranvfStop+((CodBias[i])*dstop*mt); //******
+                       tranvdStop=tranvdStop+((weights[1][1])*(CodBias[i])*dstop*mt);
+                                }
+                       if (transition(GCodes[3][i], GCodes[3][ii])) {
+                        transs=transs+1;
+                       sumt2stop=sumt2stop+((CodBias[i])*dstop*mt);
+                       sp2stop=sp2stop+((weights[1][0])*(CodBias[i])*dstop*mt);//*
+                       spaaStop=spaaStop+(weights[1][0])*Faas[i]*dstop*mt;
+                        transfStop=transfStop+((CodBias[i])*dstop*mt); //******
+                       transdStop=transdStop+((weights[1][0])*(CodBias[i])*dstop*mt); //******/
+                           }
+                    }
+       if (((codonpos==1)||(codonpos==0))&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[2][i]!=GCodes[2][ii])) {
+                // cout<<po2.first<<" ";
+                 ntts1=ntts1+1;
+                 if (!(STOP(GCodes[0][i], GCodes[0][ii]))){
+                     if (transversion(GCodes[2][i], GCodes[2][ii])) tranv=tranv+1;
+                         if (transition(GCodes[2][i], GCodes[2][ii]))  trans=trans+1;
+                        ntt1=ntt1+1;
+                          }
+                        //nor *  //nor * and nor *
+                        if (transversion(GCodes[2][i], GCodes[2][ii]))  {
+                            tranvv=tranvv+1;
+                             sumt1stop=sumt1stop+((CodBias[i])*dstop*mt);
+                       sp1stop=sp1stop+((weights[0][1])*(CodBias[i])*dstop*mt);//*
+                       spaaStop=spaaStop+(weights[0][1])*Faas[i]*dstop*mt;
+                       tranvfStop=tranvfStop+((CodBias[i])*dstop*mt); //******
+                       tranvdStop=tranvdStop+((weights[0][1])*(CodBias[i])*dstop*mt); //*****/
+                            }
+                       if (transition(GCodes[2][i], GCodes[2][ii])) {
+                        transs=transs+1;
+                        sumt1stop=sumt1stop+((CodBias[i])*dstop*mt);
+                       sp1stop=sp1stop+((weights[0][0])*(CodBias[i])*dstop*mt);//*
+                       spaaStop=spaaStop+(weights[0][0])*Faas[i]*dstop*mt;
+                       transfStop=transfStop+((CodBias[i])*dstop*mt); //******
+                       transdStop=transdStop+((weights[0][0])*(CodBias[i])*dstop*mt); //******/
+                       }
+                }
+            }
+        }
+          saa=saa+aaconnected.size();
+          sas=sas+aasconnected.size();
+          aaconnected.clear();
+          aasconnected.clear();
+      }
+      vector< double > res;
+
+      res.push_back((sumt1+sumt2+sumt3)/(nt1+nt2+nt3+ntt1+ntt2+ntt3));
+      res.push_back((sp1+sp2+sp3)/(nt1+nt2+nt3+ntt1+ntt2+ntt3));
+      res.push_back(spaa/(nt1+nt2+nt3+ntt1+ntt2+ntt3));
+      res.push_back(sumt1/(nt1+ntt1));
+      res.push_back(sumt2/(nt2+ntt2));
+      res.push_back(sumt3/(nt3+ntt3));
+      res.push_back(sp1/(nt1+ntt1));
+      res.push_back(sp2/(nt2+ntt2));
+      res.push_back(sp3/(nt3+ntt3));
+      res.push_back(transf/trans);
+      res.push_back(transd/trans);
+      res.push_back(tranvf/tranv);
+      res.push_back(tranvd/tranv);
+
+
+      res.push_back(saa);
+      res.push_back(nt1+nt2+nt3);
+      res.push_back(nt1);
+      res.push_back(nt2);
+      res.push_back(nt3);
+      res.push_back((nt1+nt2+nt3)+(ntt1+ntt2+ntt3));
+
+       res.push_back(nt1+ntt1);
+       res.push_back(nt2+ntt2);
+       res.push_back(nt3+ntt3);
+
+      res.push_back(sas);
+      res.push_back(nts1+nts2+nts3);
+      res.push_back(nts1);
+      res.push_back(nts2);
+      res.push_back(nts3);
+      res.push_back((nts1+nts2+nts3)+(ntts1+ntts2+ntts3));
+
+       res.push_back(nts1+ntts1);
+       res.push_back(nts2+ntts2);
+       res.push_back(nts3+ntts3);
+
+       res.push_back(transd/trans);
+       res.push_back(transf/trans);
+       res.push_back(tranvd/tranv);
+       res.push_back(tranvf/tranv);
+
+   return res;
+ }
+ bool GraphGC::Bconnected(string gc, char aa, char ab, vector< float > Paa, vector< string > GCodes){
+    pair<int,char> po, po2;
+    bool connect=true;
+    vector < int > resu;
+     unsigned int g=0;
+    while(g<gc.length()){
+     po=AAnIdentify(g, gc);
+     for (unsigned int ii = 0; ii < gc.length(); ii++)
+      {
+       if ((gc[g]==aa)&&(gc[ii]==ab)) {
+         po2=AAnIdentify(ii, gc);
+                if ((GCodes[2][g]==GCodes[2][ii])&&(GCodes[3][g]==GCodes[3][ii])&&(GCodes[4][g]!=GCodes[4][ii])){
+                    return connect;
+                                }
+               if ((GCodes[2][g]==GCodes[2][ii])&&(GCodes[3][g]!=GCodes[3][ii])&&(GCodes[4][g]==GCodes[4][ii])){
+                    return connect;
+                             }
+                if ((GCodes[2][g]!=GCodes[2][ii])&&(GCodes[3][g]==GCodes[3][ii])&&(GCodes[4][g]==GCodes[4][ii])){
+                    return connect;
+                         }
+                    }
+              ii++;
+                 }
+          g++;
+       }
+   connect=false;
+return connect;
+ }
+
+ vector <double> GraphGC::Bprob(ofstream &InputFile, int h , vector< float > Paa, vector <double> vg, vector< string > GCodes, vector <double>  resy2, vector <double> resy, char aa, char ab, int g)  {
+  bool selecton;
+  string change;
+  int L=9;
+  vector < vector <double> > freqs;
+    for (unsigned int ii = 0; ii < L; ii++)
+     {
+        if (g==1) selecton=(resy[ii]<resy2[ii]); //cantelli
+        else selecton=(resy[ii]>resy2[ii]);     // scores
+        if  (selecton) {  //
+                vg[ii]++;
+
+                       }
+             }
+  return vg;
+       }
+
+int GraphGC::contAA(string Gcode, char aa){
+    int c=0;
+    for (unsigned int i = 0; i <  Gcode.length(); i++){
+             if (Gcode[i]==aa) c++;
+            }
+    return c;
+ }
+
+vector <double>  GraphGC::Reassign1(vector < vector <double> >GC201models, ofstream &InputFile, string name, vector< float > Paa, vector< string > gcodes, bool select) {
+
+    vector< string > gcodes1(gcodes);
+    string a="ARN*DCQEGHILKMFPSTWYV";
+    vector < vector <double> >  res;
+    vector <double> freqs, freqs1;
+    string ma;
+    if (select) ma="Mayorq2";
+    else ma="Mayorq1";
+      InputFile<<name<<"      "<<ma<<"      ";
+    vector <double>  vg{0,0,0,0,0,0,0,0,0,0,0,0};   //prop of best codes
+    vector <double>  resy20a, resy21Ca,resy20a0, resy20Ca0;
+    string gc, gc1;
+    int ff=0, g=0;
+    gc=gcodes[0];
+    //GC201models=GlobalMeanVar201(Paa,gcodes);
+    int L=12;
+    for (unsigned int i = 0; i < L; i++){
+             resy20a0.push_back(GC201models[4][i]);
+                     }
+    g=0;
+    bool selector=true;
+    while(g<gc.length()){
+         int gg=0;
+         int cc;
+         while(gg<a.length()){
+           if (!select){
+                cc=contAA(gc, gc[g]);
+            if  ((a[gg]!=gc[g])&&(cc>1))
+            {
+               gc1=gc;
+               gc1[g]=a[gg];
+               gcodes[0]=gc1;
+              // GC201models=GlobalMeanVar201(Paa,gcodes);
+               for (unsigned int i = 0; i <L ; i++){
+                       resy20a.push_back(GC201models[4][i]); //scores
+                        }
+                  if (ff==0){
+                    freqs=Bprob(InputFile, g, Paa, vg, gcodes1, resy20a0, resy20a,gc[g], a[gg], 1);    //scores
+                   // freqs1=Bprob(InputFile, g, Paa, vg, gcodes1, resy20Ca0, resy20Ca, gc[g], a[gg], 1); //cantelli
+                                   }
+                  else  {
+                           vg=freqs; //scores
+                           freqs=Bprob(InputFile, g, Paa, vg, gcodes1, resy20a0, resy20a,gc[g], a[gg], 1);
+
+                    }
+         resy20a.clear();
+         ff++;
+               }
+                }
+        else if (select) {
+             cc=contAA(gc, gc[g]);
+           if  ((a[gg]!=gc[g])&&(cc>2))  {  //((a[gg]!=gc[g])&&(gc[g]!='W')&&(gc[g]!='M')&&(gc[g]!='K')&&(gc[g]!='Q')&&(gc[g]!='D')&&(gc[g]!='N')&&(gc[g]!='C')&&(gc[g]!='H')&&(gc[g]!='Y')&&(gc[g]!='E')&&(gc[g]!='F')) {
+               gc1=gc;
+               gc1[g]=a[gg];  //replace(gc.begin(), gc.end(), gc[g], a[gg]);
+               gcodes[0]=gc1;
+               //GC201models=GlobalMeanVar201(Paa,gcodes);
+               for (unsigned int i = 0; i <L ; i++){
+                       resy20a.push_back(GC201models[4][i]); //scores
+                       //resy20Ca.push_back(GC201models[4][i]); //cantelli's bound
+                        }
+                  if (ff==0){
+                    freqs=Bprob(InputFile, g, Paa, vg, gcodes1, resy20a0, resy20a,gc[g], a[gg], 1);    //mayor que scores
+                   // freqs1=Bprob(InputFile,g,  Paa, vg, gcodes1, resy20Ca0, resy20Ca, gc[g], a[gg], 1); //menor que  cantelli
+                                   }
+                  else  {                                                                                //scores
+                           vg=freqs;
+                           freqs=Bprob(InputFile, g, Paa, vg, gcodes1, resy20a0, resy20a,gc[g], a[gg], 1);
+                                                                                 //cantelli
+                           //for (unsigned int u = 0; u <L ; u++) vg[u]=freqs1[u];
+                           //freqs1=Bprob(InputFile, g, Paa, vg, gcodes1, resy20Ca0, resy20Ca,gc[g], a[gg], 1);                                               }
+         resy20a.clear();
+         //resy20Ca.clear();
+         ff++;   }
+                }
+                 }
+            gg++;
+              }
+     g++;
+     }
+  InputFile<<"      "<<ff;
+  vector <double> res3, res4;
+  for (unsigned int ii = 0; ii < L; ii++)
+     {
+         InputFile<<"      "<<freqs[ii]; //<<"      "<<freqs1[ii]; //score cantelli
+         res3.push_back(freqs[ii]/ff);
+       //  res4.push_back(freqs1[ii]/ff);
+         }
+    InputFile<<endl;
+    return res3;
+ }
+
+
+
 
 
 GraphGC::~GraphGC()

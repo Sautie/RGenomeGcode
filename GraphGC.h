@@ -2,6 +2,7 @@
 #define GRAPHGC_H
 using namespace std;
 #include <vector>
+#include <list>
 
 typedef struct{
    vector<  vector<int> > HsB;
@@ -11,7 +12,7 @@ typedef struct{
 class GraphGC
 {
     public:
-        GraphGC(int n=0);
+        GraphGC(int n=20);
         GraphGC(const GraphGC& g);
         GraphGC(const vector <double> &, const vector <string> &, int, int, int, int, int);
         GraphGC& operator=(const GraphGC&);
@@ -21,9 +22,11 @@ class GraphGC
        double getProd(int, int);
        //double* getWeight();
        bool STOP(char, char);
-       bool METRP(int, int, vector< float >&);
+       bool METRP(int, int, vector< double >);
        bool transition(char, char);
        bool transversion(char, char);
+       void clearD();
+       void clearW();
        vector <double> allMeanSuppresors(vector <double>,vector< string >);
        double SumProd(int);
        int GCPart(vector<int>, vector<int>, int);
@@ -38,12 +41,22 @@ class GraphGC
        double score(double, double, double);
        vector< double> insert20(vector< double >);
        vector< double> standarize(vector< double>);
+       void AP1(int, bool[], int [], int[], int [], bool[]);
+       bool* APN();
+       void toADJL();
        void print();
+       vector< double > permGenCodes(string, const vector <double> &, const vector <double> &, const vector <double> &, const vector <string>&);
+       vector< double > permGenCodes2(string, const vector <double> &, const vector <double> &,  const vector <string> &);
+       bool Bconnected(string, char, char, vector< float >, vector< string >);
+       vector <double> Bprob(ofstream&, int, vector< float >, vector <double>, vector< string >, vector <double>, vector <double>, char, char, int);
+       int contAA(string, char);
+       vector <double>  Reassign1(vector < vector <double> >, ofstream &, string, vector< float >, vector< string >, bool);
 
     private:
-        int vertices;
+        int vertices=20;
         double **geneM;
         double **phenoM;
+        list<int> *adL;
         double weights[3][2] ={{1,0.5},{0.5,0.1},{1,1}};
         string aa="ARN*DCQEGHILKMFPSTWYV";
         void setW(int, int, double);
@@ -52,6 +65,7 @@ class GraphGC
         pair<int,char> AAnIdentify(int, string);
         vector<double> P20ToP64(string, vector<double>);
         double MeanSuppresor(vector <double>,vector< string >, string);
+        void AP1(int, bool, int, int, int, bool);
 };
 
 #endif // GRAPHGC_H
