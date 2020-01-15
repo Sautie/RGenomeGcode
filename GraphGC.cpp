@@ -208,7 +208,7 @@ vector<double> GraphGC::P20ToP64(string gc, vector<double> Paa20){
            }
   return Paa64;
      }
-//
+
 CodeN GraphGC::CodeNbd(string AAGC){
    vector<  vector<int> > L (vertices, vector<int>(6, 0));
    vector<int> B;
