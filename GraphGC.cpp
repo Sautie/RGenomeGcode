@@ -208,7 +208,7 @@ vector<double> GraphGC::P20ToP64(string gc, vector<double> Paa20){
            }
   return Paa64;
      }
-
+//
 CodeN GraphGC::CodeNbd(string AAGC){
    vector<  vector<int> > L (vertices, vector<int>(6, 0));
    vector<int> B;
@@ -225,7 +225,7 @@ for (int i = 0; i < vertices; i++)
                   if (geneM[i][j]>0) {
                   for (int t = 0; t< vertices; t++) {
                        if (geneM[ii][t]>0){
-                           if ((j!=t)&&(geneM[i][j]==geneM[ii][t])&&(AAGC[j]==AAGC[t])){
+                           if ((geneM[i][j]==geneM[ii][t])&&(AAGC[j]==AAGC[t])){
                                            a=1;
                                            }
                                        }
