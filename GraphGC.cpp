@@ -227,11 +227,10 @@ for (int i = 0; i < vertices; i++)
                        if (geneM[ii][t]>0){
                            if ((j!=t)&&(geneM[i][j]==geneM[ii][t])&&(AAGC[j]==AAGC[t])){
                                            a=1;
-                                          // cout<<i;//cout<<j<<" "<<t<<" "<<vertices<<endl;}
                                            }
                                        }
                                       }
-                                     // cout<<" "<<a<<endl;
+
                                 if (a==0) {
                                     break;
                                    }
@@ -1126,6 +1125,4 @@ vector <double>  GraphGC::Reassign1(vector < vector <double> >GC201models, ofstr
             delete[] phenoM;
  }
 
-
- //vert 64 gc 2 p=1 s=1 v=1
 
