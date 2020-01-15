@@ -14,7 +14,7 @@ class GraphGC
     public:
         GraphGC(int n=20);
         GraphGC(const GraphGC& g);
-        GraphGC(const vector <double> &, const vector <string> &, int, int, int, int, int);
+        GraphGC(vector <double> &, vector <string> &, int, int, int, int, int);
         GraphGC& operator=(const GraphGC&);
         ~GraphGC();
        double getGW(int, int);
@@ -34,7 +34,7 @@ class GraphGC
        vector<int> NumericRecode(string);
        vector< vector <int> > PairCompGC(vector<int>, vector<int>);
        vector <int> AANumbers(vector <int>, vector <int>);
-       CodeN CodeNbd(vector<int> AAGCnum);
+       CodeN CodeNbd(string AAGCnum);
        double TNMean(int);
        double TNVar(int, double);
        double CUBound(double, double, double);
@@ -45,15 +45,15 @@ class GraphGC
        bool* APN();
        void toADJL();
        void print();
-       vector< double > permGenCodes(string, const vector <double> &, const vector <double> &, const vector <double> &, const vector <string>&);
+       vector< double > permGenCodes(string, const vector <double> &, const vector <double> &, vector <double> &, const vector <string>&);
        vector< double > permGenCodes2(string, const vector <double> &, const vector <double> &,  const vector <string> &);
        bool Bconnected(string, char, char, vector< float >, vector< string >);
        vector <double> Bprob(ofstream&, int, vector< float >, vector <double>, vector< string >, vector <double>, vector <double>, char, char, int);
        int contAA(string, char);
        vector <double>  Reassign1(vector < vector <double> >, ofstream &, string, vector< float >, vector< string >, bool);
-
+       vector<double> P20ToP64(string, vector<double>);
     private:
-        int vertices=20;
+        int vertices=64;
         double **geneM;
         double **phenoM;
         list<int> *adL;
@@ -63,7 +63,7 @@ class GraphGC
         void setD(int, int, double);
         void setWeight(int, int, double);
         pair<int,char> AAnIdentify(int, string);
-        vector<double> P20ToP64(string, vector<double>);
+        //vector<double> P20ToP64(string, vector<double>);
         double MeanSuppresor(vector <double>,vector< string >, string);
         void AP1(int, bool, int, int, int, bool);
 };

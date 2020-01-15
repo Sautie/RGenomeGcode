@@ -183,8 +183,8 @@ bool GraphGC::transversion(char a, char b) {
 pair<int,char> GraphGC::AAnIdentify(int ss, string alp){
     int s=0;
     //string aa="ARN*DCQEGHILKMFPSTWYV";
-    string aa64=alp;
-    while ((s<21)&&(aa[s]!=aa64[ss])) s++;
+    // string aa64=alp;
+    while ((s<21)&&(aa[s]!=alp[ss])) s++;
     if (s<21)
           return make_pair(s, aa[s]);
     else  return make_pair(s,'0');
@@ -192,9 +192,8 @@ pair<int,char> GraphGC::AAnIdentify(int ss, string alp){
 vector<int> GraphGC::NumericRecode(string aa64){
     pair<int,char> po;
     vector<int> AAGCnum;
-   for (int i = 0; i < aa64.size(); i++)
-     {
-         po=AAnIdentify(i, aa64);
+    for (int i = 0; i < aa64.size(); i++)
+     {   po=AAnIdentify(i, aa64);
          AAGCnum.push_back(po.first);
           }
  return AAGCnum;
@@ -210,29 +209,35 @@ vector<double> GraphGC::P20ToP64(string gc, vector<double> Paa20){
   return Paa64;
      }
 
-CodeN GraphGC::CodeNbd(vector<int> AAGCnum){
+CodeN GraphGC::CodeNbd(string AAGC){
    vector<  vector<int> > L (vertices, vector<int>(6, 0));
    vector<int> B;
-   int l,a,q,c;
+   int l,j,a,q,c;
 for (int i = 0; i < vertices; i++)
    {
-     l=0; q=0;
+     q=0;
     for (int ii = 0; ii < vertices; ii++)
      {
-       if ((i!=ii)&&(AAGCnum[i]==AAGCnum[ii])){
-            c=0; a=0; q=q+1; int j = 0;
+       if ((i!=ii)&&(AAGC[i]==AAGC[ii])){
+             l=0;a=0; q=q+1;
             for (j = 0; j< vertices; j++) {
-                  a=0;
+                  a=0; c=0;
+                  if (geneM[i][j]>0) {
                   for (int t = 0; t< vertices; t++) {
-                       if ((phenoM[i][j]>0)&&(phenoM[ii][t]>0)){
-                           if ((phenoM[i][j]==phenoM[ii][t])&&(AAGCnum[j]==AAGCnum[t])){
-                                           a=1; }
+                       if (geneM[ii][t]>0){
+                           if ((j!=t)&&(geneM[i][j]==geneM[ii][t])&&(AAGC[j]==AAGC[t])){
+                                           a=1;
+                                          // cout<<i;//cout<<j<<" "<<t<<" "<<vertices<<endl;}
+                                           }
                                        }
                                       }
+                                     // cout<<" "<<a<<endl;
                                 if (a==0) {
                                     break;
-                                }//it is enough that one vertex j connected to i has any vertex t specifying the same aa as that for the vertex j ....and/or with the same weight on the edge connected to the vertex ii
+                                   }
+                                 }
                               }
+                              cout<<j<<endl;
                               if (j==vertices){
                                 L[i][l]=ii;
                                 l=l+1;
@@ -286,12 +291,13 @@ vector <double>  GraphGC::allMeanSuppresors(vector <double> Paa,vector< string >
  }
 
 
-GraphGC::GraphGC(const vector <double>  &Paa, const vector <string> &GCodes, int vert, int gc, int p, int s, int v){
+GraphGC::GraphGC(vector <double>  &Paa, vector <string> &GCodes, int vert, int gc, int p, int s, int v){
   /*  p=0 s=0 v=1  transv model
     p=0 s=1 v=0    trans model
     p=3 s=1 v=1    3 pos model
     p=2 s=1 v=1    2 pos model
-    p=1 s=1 v=1    1 pos model
+    p=1 s=1 v=1    1 pos model         vert 64 gc 2 p=1 s=1 v=1
+    p=0 s=1 v=1     tot model
     gc=0  block model
     gc=1  sense model
     gc=2  codon model
@@ -301,8 +307,21 @@ GraphGC::GraphGC(const vector <double>  &Paa, const vector <string> &GCodes, int
   vector <double> Paa64;
   pair<int,char> po, po2;
   string alp=GCodes[0], gcode=GCodes[0];
-  Paa64=P20ToP64(gcode, Paa);
+  Paa=insert20(Paa);
+  Paa64=P20ToP64(alp, Paa);
   Paa64=allMeanSuppresors(Paa64,GCodes);
+
+  geneM = new double*[vertices];
+    phenoM = new double*[vertices];
+    for (int r = 0; r< vertices; r++) {
+        geneM[r] = new double[vertices];
+        phenoM[r] = new double[vertices];
+        for (int c = 0; c < vertices; c++) {
+            geneM[r][c] = 0;
+            phenoM [r][c] = 0;
+        }
+    }
+
  for (int i = 0; i < GCodes[0].length(); i++)
    {
     po=AAnIdentify(i, alp);
@@ -350,7 +369,7 @@ GraphGC::GraphGC(const vector <double>  &Paa, const vector <string> &GCodes, int
           }
        if (((p==2)||(p==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[3][i]!=GCodes[3][ii])) {
 
-           if ((s==1)&&(transition(GCodes[4][i], GCodes[4][ii]))){
+           if ((s==1)&&(transition(GCodes[3][i], GCodes[3][ii]))){
                 if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii]))
                     setW(i, ii, weights[1][0]);
                 if (gc==2)
@@ -358,7 +377,7 @@ GraphGC::GraphGC(const vector <double>  &Paa, const vector <string> &GCodes, int
                 if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii])))
                     setW(i, ii, weights[1][0]);
             }
-          if ((v==1)&&(transversion(GCodes[4][i], GCodes[4][ii]))){
+          if ((v==1)&&(transversion(GCodes[3][i], GCodes[3][ii]))){
                 if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii]))
                     setW(i, ii, weights[1][1]);
                 if (gc==2)
@@ -370,7 +389,7 @@ GraphGC::GraphGC(const vector <double>  &Paa, const vector <string> &GCodes, int
                }
          if (((p==1)||(p==0))&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[2][i]!=GCodes[2][ii])) {
 
-           if ((s==1)&&(transition(GCodes[4][i], GCodes[4][ii]))){
+           if ((s==1)&&(transition(GCodes[2][i], GCodes[2][ii]))){
                 if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii]))
                     setW(i, ii, weights[0][0]);
                 if (gc==2)
@@ -378,16 +397,16 @@ GraphGC::GraphGC(const vector <double>  &Paa, const vector <string> &GCodes, int
                 if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii])))
                     setW(i, ii, weights[0][0]);
             }
-          if ((v==1)&&(transversion(GCodes[4][i], GCodes[4][ii]))){
+          if ((v==1)&&(transversion(GCodes[2][i], GCodes[2][ii]))){
+
                 if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii]))
                     setW(i, ii, weights[0][1]);
                 if (gc==2)
                     setW(i, ii, weights[0][1]);
                 if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii])))
                     setW(i, ii, weights[0][1]);
-          }
+                                  }
                      }
-
     }
 
 }
@@ -425,13 +444,13 @@ vector <int>  GraphGC::BChanges(const vector <string> &GCodes, int vert, int gc,
                 }
           }
        if (((p==2)||(p==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[3][i]!=GCodes[3][ii])) {
-           if ((s==1)&&(transition(GCodes[4][i], GCodes[4][ii]))){
+           if ((s==1)&&(transition(GCodes[3][i], GCodes[3][ii]))){
                 if (gc==0)
                     ChangesCount[4]=ChangesCount[4]+1;
                 if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii])))
                     ChangesCount[5]=ChangesCount[5]+1;
             }
-          if ((v==1)&&(transversion(GCodes[4][i], GCodes[4][ii]))){
+          if ((v==1)&&(transversion(GCodes[3][i], GCodes[3][ii]))){
                 if (gc==0)
                      ChangesCount[6]=ChangesCount[6]+1;
                 if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii])))
@@ -440,20 +459,19 @@ vector <int>  GraphGC::BChanges(const vector <string> &GCodes, int vert, int gc,
                }
          if (((p==1)||(p==0))&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[2][i]!=GCodes[2][ii])) {
 
-           if ((s==1)&&(transition(GCodes[4][i], GCodes[4][ii]))){
+           if ((s==1)&&(transition(GCodes[2][i], GCodes[2][ii]))){
                 if (gc==0)
                       ChangesCount[8]=ChangesCount[8]+1;
                 if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii])))
                      ChangesCount[9]=ChangesCount[9]+1;
             }
-          if ((v==1)&&(transversion(GCodes[4][i], GCodes[4][ii]))){
+          if ((v==1)&&(transversion(GCodes[2][i], GCodes[2][ii]))){
                 if (gc==0)
                     ChangesCount[10]=ChangesCount[10]+1;
                 if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii])))
                     ChangesCount[11]=ChangesCount[11]+1;
           }
                      }
-
     }
  }
 return ChangesCount;
@@ -478,7 +496,7 @@ double nmean;
 for (int i = 0; i < vertices; i++)
    {
     for (int ii = 0; ii < vertices; ii++)
-     {int
+     {
             Sg=Sg+geneM[i][ii];
             Sp=Sp+phenoM[i][ii];
                 }
@@ -622,7 +640,7 @@ void GraphGC::print() {
       }
     }
 
-vector< double > GraphGC::permGenCodes(string alp, const vector <double>  &CodBias, const vector <double>  &Faas, const vector <double>  &Paa, const vector <string> &GCodes) {
+vector< double > GraphGC::permGenCodes(string alp, const vector <double>  &CodBias, const vector <double>  &Faas, vector <double>  &Paa, const vector <string> &GCodes) {
 
   int codonpos=0;
   pair<int,char> po, po2;
@@ -646,6 +664,7 @@ vector< double > GraphGC::permGenCodes(string alp, const vector <double>  &CodBi
   int saa=0, sas=0;
   double d, da1, da2;
   vector <double> Paa64;
+  Paa=insert20(Paa);
   Paa64=P20ToP64(GCodes[0], Paa);
 
  for (unsigned int i = 0; i < GCodes[0].size(); i++)
@@ -1097,11 +1116,7 @@ vector <double>  GraphGC::Reassign1(vector < vector <double> >GC201models, ofstr
     return res3;
  }
 
-
-
-
-
-GraphGC::~GraphGC()
+ GraphGC::~GraphGC()
 {
     for (int i = 0; i < vertices; i++){
                   delete[] geneM[i];
@@ -1110,3 +1125,7 @@ GraphGC::~GraphGC()
             delete[] geneM;
             delete[] phenoM;
  }
+
+
+ //vert 64 gc 2 p=1 s=1 v=1
+
