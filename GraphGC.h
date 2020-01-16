@@ -30,6 +30,9 @@ class GraphGC
        vector <double> allMeanSuppresors(vector <double>,vector< string >);
        double SumProd(int);
        int GCPart(vector<int>, vector<int>, int);
+       int PartChanges(vector<int> );
+       vector<vector<vector<double> > > hPart(int , vector< vector<double> > , vector< vector<double> > ,  vector<int> ,  vector<int> ,  vector<int> );
+       vector<vector<vector<double> > > gcPart(int, vector< vector<double> > , vector< vector<int> > , vector<int>  , vector< vector<int> >,  vector< vector<int> >,  vector< vector<int> > );
        vector <int> BChanges(const vector <string>&, int, int, int, int, int);
        vector<int> NumericRecode(string);
        vector< vector <int> > PairCompGC(vector<int>, vector<int>);
@@ -45,13 +48,13 @@ class GraphGC
        bool* APN();
        void toADJL();
        void print();
-       vector< double > permGenCodes(string, const vector <double> &, const vector <double> &, vector <double> &, const vector <string>&);
-       vector< double > permGenCodes2(string, const vector <double> &, const vector <double> &,  const vector <string> &);
        bool Bconnected(string, char, char, vector< float >, vector< string >);
        vector <double> Bprob(ofstream&, int, vector< float >, vector <double>, vector< string >, vector <double>, vector <double>, char, char, int);
        int contAA(string, char);
        vector <double>  Reassign1(vector < vector <double> >, ofstream &, string, vector< float >, vector< string >, bool);
-       vector<double> P20ToP64(string, vector<double>);
+       vector< double > permGenCodes(string, const vector <double> &, const vector <double> &, vector <double> &, const vector <string>&);
+       vector< double > permGenCodes2(string, const vector <double> &, const vector <double> &,  const vector <string> &);
+       vector< double > permGenCodes64(string, const vector <double>  &, const vector <double>  &,  const vector <string> &);
     private:
         int vertices=64;
         double **geneM;
@@ -63,7 +66,7 @@ class GraphGC
         void setD(int, int, double);
         void setWeight(int, int, double);
         pair<int,char> AAnIdentify(int, string);
-        //vector<double> P20ToP64(string, vector<double>);
+        vector<double> P20ToP64(string, vector<double>);
         double MeanSuppresor(vector <double>,vector< string >, string);
         void AP1(int, bool, int, int, int, bool);
 };

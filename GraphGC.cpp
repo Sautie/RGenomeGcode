@@ -77,11 +77,11 @@ GraphGC& GraphGC::operator=(const GraphGC& g)
 }
  void GraphGC::setW(int i, int j, double w=0) {
                   geneM[i][j] = geneM[i][j]+w;
-                  geneM[j][i] = geneM[j][i]+w;
+                 // geneM[j][i] = geneM[j][i]+w;
     }
  void GraphGC::setD(int i, int j, double d=0) {
                   phenoM[i][j] = d;
-                  phenoM[j][i] = d;
+                  //phenoM[j][i] = d;
     }
  void GraphGC::clearD() {
    for (int i = 0; i < vertices; i++){
@@ -120,7 +120,7 @@ double GraphGC::getPW(int i, int j) {
     }
 
 double GraphGC::getProd(int i, int j) {
-                  return ((phenoM[i][j]*geneM[i][j])+(phenoM[j][i]*geneM[j][i]));
+                  return ((phenoM[i][j]*geneM[i][j]));
     }
 double GraphGC::SumProd (int N){
   double s=0;
@@ -133,6 +133,13 @@ double GraphGC::SumProd (int N){
          }
     return (s/N);
 }
+
+//introd particion genetica
+//particion por comp de codigos de func robustesse
+//funcion que usar vector de conteo aanumbers
+//introd media
+//introd variance
+
 int GraphGC::GCPart(vector<int> GCassign, vector<int> GCVassign, int iv=0){  //iv=0 GCassign: invariant set of nodes, iv=1 variable part
    int LC;
    for (int i = 0; i < vertices; i++)
@@ -141,18 +148,53 @@ int GraphGC::GCPart(vector<int> GCassign, vector<int> GCVassign, int iv=0){  //i
      {
         if (iv==0) {
           phenoM[GCassign[i]][ii]=0;
+          geneM[GCassign[i]][ii]=0;
           //phenoM[ii][GCassign[i]]=0;
+          //geneM[ii][GCassign[i]]=0;
           LC=GCassign.size();
                 }
           else {
            phenoM[GCVassign[i]][ii]=0;
+           geneM[GCassign[i]][ii]=0;
            //phenoM[ii][GCVassign[i]]=0;
+           //geneM[ii][GCassign[i]]=0;
            LC=GCVassign.size();
                  }
          }
          }
       return LC;
     }
+
+vector<vector<vector<double> > >GraphGC::hPart(int N, vector< vector<double> > mPaa, vector< vector<double> > mGenm,  vector<int> GCHassign,  vector<int> GCVassign,  vector<int> GCSassign){
+//P2
+vector<vector<vector<double> > > outs;
+vector<vector<double> > se(mPaa.size(), vector<double>(mGenm[0].size(), 0));
+vector<vector<double> > co(mPaa.size(), vector<double>(mGenm[0].size(), 0));
+ for (int k = 0; k < mPaa.size(); k++) {
+        double sh=0;
+        for (int i = 0; i < GCHassign.size(); i++)
+             for (int ii = 0; ii < vertices; ii++)
+                     if ((geneM[GCHassign[i]][ii])>0)
+                        sh=sh+ (geneM[GCHassign[i]][ii]*((mPaa[k][GCHassign[i]]-mPaa[k][ii])*(mPaa[k][GCHassign[i]]-mPaa[k][ii])));
+                     for (int g = 0; g < mGenm.size(); g++){
+                          int sg=0, ss=0;
+                          for (int j = 0; j < GCVassign.size(); j++)
+                            for (int jj = 0; jj < vertices; jj++)
+                                  if ((geneM[GCVassign[j]][jj])>0)
+                                      sg=sg+ ((mGenm[g][GCVassign[j]])*(geneM[GCVassign[j]][jj])*((mPaa[k][GCVassign[j]]-mPaa[k][jj])*(mPaa[k][GCVassign[j]]-mPaa[k][jj])));
+                           se[k][g]=(1/N)*(sh+sg);
+                           for (int j = 0; j < GCSassign.size(); j++)
+                            for (int jj = 0; jj < vertices; jj++)
+                                 if ((geneM[GCSassign[j]][jj])>0)
+                                      ss=ss+((mGenm[g][GCSassign[j]])*(geneM[GCSassign[j]][jj])*((mPaa[k][GCSassign[j]]-mPaa[k][jj])*(mPaa[k][GCSassign[j]]-mPaa[k][jj])));
+                           co[k][g]=se[k][g]+(ss/N);
+                       }
+                 }
+     outs.push_back(se);
+     outs.push_back(co);
+    return outs;
+    }
+
 vector< vector<int> > GraphGC::PairCompGC(vector<int> AAGCnum1, vector<int> AAGCnum2){
   vector< vector<int> > GComp;
   vector< int> GCommon, GCdiff;
@@ -165,8 +207,76 @@ vector< vector<int> > GraphGC::PairCompGC(vector<int> AAGCnum1, vector<int> AAGC
        }
        GComp.push_back(GCommon);
        GComp.push_back(GCdiff);
+
    return GComp;
     }
+
+int GraphGC::PartChanges(vector<int> AAssign){
+  int changes=0;
+  for (int i = 0; i < vertices; i++)
+   {
+      for (int j = 0; j < vertices; j++)
+       {
+        if (geneM[AAssign[i]][j]>0) changes=changes+1;
+          }
+       }
+   return changes;
+    }
+
+vector<vector<vector<double> > >GraphGC::gcPart(int N, vector< vector<double> > mPaa, vector< vector<int> > codes, vector<int>  GCSgcassign, vector< vector<int> >GCBassign,  vector< vector<int> >GCPassign,  vector< vector<int> > GCSassign)
+{
+  vector<double> se(mPaa.size(), 0);
+  vector<double> sco(mPaa.size(), 0);
+  vector<vector<double> > scp(mPaa.size(), vector<double>(GCBassign.size(), 0));
+  vector<vector<double> > sce(mPaa.size(), vector<double>(GCBassign.size(), 0));
+  for (int k = 0; k < mPaa.size(); k++)
+   {
+       double s=0, sh=0, sp=0, sb=0, ss=0;
+       for (int i = 0; i < vertices; i++)
+             for (int ii = 0; ii < vertices; ii++)
+                     if ((geneM[i][ii])>0)
+                      s=s+ (geneM[i][ii]*((mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii]))); //for the sgc
+        for (int i = 0; i < GCSgcassign.size(); i++)
+             for (int ii = 0; ii <vertices ; ii++)
+                  if ((geneM[GCSgcassign[i]][ii])>0)
+                    sh=sh+ (geneM[GCSgcassign[i]][ii]*((mPaa[k][GCSgcassign[i]]-mPaa[k][ii])*(mPaa[k][GCSgcassign[i]]-mPaa[k][ii]))); //for the sgc
+        se[k]=s/N;
+        sco[k]=(s+sh)/N;
+        for (int c = 0; c < codes.size(); c++)
+         {
+                double sp=0, sb=0, ss=0;
+                for (int f = 0; f < GCPassign.size(); f++)
+                   for (int j = 0; j < vertices; j++)
+                         if ((geneM[GCPassign[c][f]][j])>0)
+                         sp=sp+ (geneM[GCPassign[c][f]][j]*((mPaa[k][GCPassign[c][f]]-mPaa[k][j])*(mPaa[k][GCPassign[c][f]]-mPaa[k][j])));
+
+                  for (int f = 0; f < GCBassign.size(); f++)
+                   for (int ii = 0; ii < vertices; ii++)
+                         if ((geneM[GCBassign[c][f]][ii])>0)
+                         sb=sb+ (geneM[GCBassign[c][f]][ii]*((mPaa[k][GCBassign[c][f]]-mPaa[k][ii])*(mPaa[k][GCBassign[c][f]]-mPaa[k][ii])));
+
+                 scp[k][c]=sco[k]-(sp+sb)/N;
+                 for (int f = 0; f < GCSassign.size(); f++)
+                   for (int ii = 0; ii < vertices; ii++)
+                         if ((geneM[GCSassign[c][f]][ii])>0)
+                          ss=ss+ (geneM[GCSassign[c][f]][ii]*((mPaa[k][GCSassign[c][f]]-mPaa[k][ii])*(mPaa[k][GCSassign[c][f]]-mPaa[k][ii])));
+                  sce[k][c]=scp[k][c]-(ss/N);
+                                                }
+     }
+   for (int f = 0; f < mPaa.size(); f++) {
+         scp[f][GCBassign.size()]=se[f];
+         sce[f][GCBassign.size()]=sco[f]; }
+
+   vector<vector<vector<double> > > outs;
+
+   outs.push_back(scp);
+   outs.push_back(sce);
+
+   return outs;
+
+}
+
+
 bool GraphGC::STOP(char a, char b) {
        return ((a=='*')||(b=='*'));
     }
@@ -416,6 +526,7 @@ vector <int>  GraphGC::BChanges(const vector <string> &GCodes, int vert, int gc,
   vertices=vert;//for sgc 64 61 20
   //vector <double> Paa64;
   vector <int> ChangesCount;
+
   //Paa64=P20ToP64(GCodes[0], Paa);
   //int trans0p3=0, trans1p3=0, trans0p2=0, trans1p2=0, trans0p1=0, trans1p1=0;
   //int tranv0p3=0, tranv1p3=0, tranv0p2=0, tranv1p2=0, tranv0p1=0, tranv1p1=0;
@@ -423,10 +534,8 @@ vector <int>  GraphGC::BChanges(const vector <string> &GCodes, int vert, int gc,
      ChangesCount.push_back(0);
  for (int i = 0; i < GCodes[0].length(); i++)
    {
-
     for (int ii = 0; ii < GCodes[0].size(); ii++)
      {
-
         //3rst pos
        if (((p==3)||(p==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]!=GCodes[4][ii])){
 
@@ -475,6 +584,7 @@ vector <int>  GraphGC::BChanges(const vector <string> &GCodes, int vert, int gc,
  }
 return ChangesCount;
 }
+//vector de conte
 vector <int> GraphGC::AANumbers(vector <int> AAGC20, vector <int> AAGC64){
   vector <int> nc;
   int s=0;
@@ -672,7 +782,6 @@ vector< double > GraphGC::permGenCodes(string alp, const vector <double>  &CodBi
     for (unsigned int ii = 0; ii < GCodes[0].size(); ii++)
      {
               po2=AAnIdentify(ii, alp);
-
               da1=Paa[po.first];
               da2=Paa[po2.first];
               dstop=((da1-da2)*(da1-da2));
@@ -689,13 +798,13 @@ vector< double > GraphGC::permGenCodes(string alp, const vector <double>  &CodBi
                        if (METRP(i, ii, CodBias)) mt=0;
                           else mt=1;
 
-                       sumt3=sumt3+((CodBias[i])*d*mt);  //(this->weights[2][0])*
+                       sumt3=sumt3+((CodBias[i])*d*mt);  //
                        sp3=sp3+((weights[2][0])*(CodBias[i])*d*mt);
                        spaa=spaa+(weights[2][0])*Faas[i]*d*mt;
                         transf=transf+((CodBias[i])*d*mt); //******
                        transd=transd+((weights[2][0])*(CodBias[i])*d*mt); //******
 
-                       sumt3stop=sumt3stop+((CodBias[i])*dstop*mt);  //(this->weights[2][0])*
+                       sumt3stop=sumt3stop+((CodBias[i])*dstop*mt);  //
                        sp3stop=sp3stop+((weights[2][0])*(CodBias[i])*dstop*mt);//
                        spaaStop=spaaStop+(weights[2][0])*Faas[i]*dstop*mt;
                         transfStop=transfStop+((CodBias[i])*dstop*mt); //******
@@ -1114,6 +1223,806 @@ vector <double>  GraphGC::Reassign1(vector < vector <double> >GC201models, ofstr
     InputFile<<endl;
     return res3;
  }
+vector< double > permGenCodes64(string alp, const vector <double>  &CodBias, const vector <double>  &Faas,  const vector <string> &GCodes) {
+ //Codbias, faas, fcod para cg64
+  int codonpos=0;
+  pair<int,char> po, po2;
+
+    int mt=0, nts1=0, nts2=0, nts3=0;
+  int ntts1=0, ntts2=0, ntts3=0;
+
+ double sumt1=0, sumt2=0, sumt3=0, sumw1=0, sumw2=0, sumw3=0;
+  double sp1=0, sp2=0, sp3=0, spd1=0, spd2=0, spd3=0;
+   double sumt1F=0, sumt2F=0, sumt3F=0, sumw1F=0, sumw2F=0, sumw3F=0;
+  double sp1F=0, sp2F=0, sp3F=0, spd1F=0, spd2F=0, spd3F=0;
+
+  double ttrans=0, ttranv=0;
+ double  transd64=0, ttransd64=0, transdw64=0, ttransdw64=0,tranvd64=0, ttranvd64=0, tranvdw64=0, ttranvdw64=0;
+ double  transd64F=0, ttransd64F=0, transdw64F=0, ttransdw64F=0     ,tranvd64F=0, ttranvd64F=0,tranvdw64F=0, ttranvdw64F=0;
+
+  double sT3w1=0,sT3w2=0,sT3w3=0, sT3w=0, sT31=0, sT32=0,sT33=0, sT3=0, sT3wtrans=0,sT3trans=0, sT3wtranv=0, sT3tranv=0;
+  double sT4w3=0,sT4w2=0,sT4w1=0, sT4w=0, sT41=0, sT42=0,sT43=0, sT4=0, sT4wtrans=0,sT4trans=0, sT4wtranv=0, sT4tranv=0;
+  double d=1, spaa=0, spaa2=0, spaaF=0, spaa2F=0, sT4aa=0, sT3aa=0;
+
+int ntt1=0, ntt2=0, ntt3=0;
+
+ for (unsigned int i = 0; i < GCodes[0].size(); i++)
+   {
+       spd1F=0, spd2F=0, spd3F=0;sp1F=0, sp2F=0, sp3F=0;
+    sumt1F=0, sumt2F=0,sumt3F=0, sumw3F=0, sumw2F=0, sumw1F=0;
+    transd64F=0, ttransd64F=0,transd64F=0, ttransd64F=0,transdw64F=0, ttransdw64F=0, tranvdw64F=0, ttranvdw64F=0;
+    spaaF=0, spaa2F=0;
+
+    for (unsigned int ii = 0; ii < GCodes[0].size(); ii++)
+     {
+    //3rst pos
+    if (ii!=i)  {
+       if (((codonpos==3)||(codonpos==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]!=GCodes[4][ii])){
+                  if (transition(GCodes[4][i], GCodes[4][ii])){
+
+              //  if (STOP(GCodes[0][i], GCodes[0][ii])) d=0; //* or *
+                   //    else {d=1; ttrans=ttrans+1; ntt3=ntt3+1; }
+
+                      if (CodBias[i]==1) mt=0; else
+                        mt=1; d=1;
+                        //global mean
+                       sumt3=sumt3+((CodBias[i])*mt*d);  //cb cg20
+                       sumw3=sumw3+((CodBias[i])*(CodBias[i])*mt*d); //w cg20
+                       sp3=sp3+((weights[2][0])*(CodBias[i])*mt*d); //w+cb cg20
+                       spd3=spd3+(((weights[2][0])*(CodBias[i]))*((weights[2][0])*(CodBias[i])*mt)*d);// (w+cb)(w+cb) cg20
+
+                       spaa=spaa+((weights[2][0])*(Faas[i])*mt*d); //w+cb cg20
+                       spaa2=spaa2+((weights[2][0])*(Faas[i])*(weights[2][0])*(Faas[i])*mt*d); //w+cb cg20
+                       spaaF=spaaF+((weights[2][0])*(Faas[i])*mt*d); //w+cb cg20
+                       spaa2F=spaa2F+((weights[2][0])*(Faas[i])*(weights[2][0])*(Faas[i])*mt*d); //w+cb cg20
+
+                       transd64=transd64+((CodBias[i])*mt*d);  //****************
+                       ttransd64=ttransd64+((CodBias[i])*(CodBias[i])*mt*d);
+                       transdw64=transdw64+((weights[2][0])*(CodBias[i])*mt*d);  //****************
+                       ttransdw64=ttransdw64+((weights[2][0])*(weights[2][0])*(CodBias[i])*(CodBias[i])*mt*d);
+
+                       sumt3F=sumt3F+((CodBias[i])*mt*d);  //cb cg20
+                       sumw3F=sumw3F+((CodBias[i])*(CodBias[i])*mt*d); //w cg20
+                       sp3F=sp3F+((weights[2][0])*(CodBias[i])*mt*d); //w+cb cg20
+                       spd3F=spd3F+(((weights[2][0])*(CodBias[i]))*((weights[2][0])*(CodBias[i])*mt*d));// (w+cb)(w+cb) cg20
+
+                       transd64F=transd64F+((CodBias[i])*mt*d);  //****************
+                       ttransd64F=ttransd64F+((CodBias[i])*(CodBias[i])*mt*d);
+                       transdw64F=transdw64F+((weights[2][0])*(CodBias[i])*mt*d);  //****************
+                       ttransdw64F=ttransdw64F+((weights[2][0])*(weights[2][0])*(CodBias[i])*(CodBias[i])*mt*d);
+                      // ttrans=ttrans+1;
+                                           }
+                  if (transversion(GCodes[4][i], GCodes[4][ii])){
+
+                    //if (STOP(GCodes[0][i], GCodes[0][ii])) d=0; //* or *
+                     // else {d=1; ttranv=ttranv+1; ntt3=ntt3+1; }
+
+                     if (CodBias[i]==1) mt=0; else
+                        mt=1; d=1;
+                        //global mean
+                      sumt3=sumt3+((CodBias[i])*mt*d);  //cb cg20
+                       sumw3=sumw3+((CodBias[i])*(CodBias[i])*mt*d); //w cg20
+                       sp3=sp3+((weights[2][1])*(CodBias[i])*mt*d); //w+cb cg20
+                       spd3=spd3+(((weights[2][1])*(CodBias[i]))*((weights[2][1])*(CodBias[i])*mt)*d);// (w+cb)(w+cb) cg20
+
+                        spaa=spaa+((weights[2][1])*(Faas[i])*mt*d); //w+cb cg20
+                       spaa2=spaa2+((weights[2][1])*(Faas[i])*(weights[2][1])*(Faas[i])*mt*d); //w+cb cg20
+                       spaaF=spaaF+((weights[2][1])*(Faas[i])*mt*d); //w+cb cg20
+                       spaa2F=spaa2F+((weights[2][1])*(Faas[i])*(weights[2][1])*(Faas[i])*mt*d); //w+cb cg20
+
+                       tranvd64=tranvd64+((CodBias[i])*mt*d);  //****************
+                       ttranvd64=ttranvd64+((CodBias[i])*(CodBias[i])*mt*d);
+                       tranvdw64=tranvdw64+((weights[2][1])*(CodBias[i])*mt*d);  //****************
+                       ttranvdw64=ttranvdw64+((weights[2][1])*(weights[2][1])*(CodBias[i])*(CodBias[i])*mt*d);
+
+                       sumt3F=sumt3F+((CodBias[i])*mt*d);  //cb cg20
+                       sumw3F=sumw3F+((CodBias[i])*(CodBias[i])*mt*d); //w cg20
+                       sp3F=sp3F+((weights[2][1])*(CodBias[i])*mt*d); //w+cb cg20
+                       spd3F=spd3F+(((weights[2][1])*(CodBias[i]))*((weights[2][1])*(CodBias[i])*mt*d));// (w+cb)(w+cb) cg20
+
+                       tranvd64F=tranvd64F+((CodBias[i])*mt*d);  //****************
+                       ttranvd64F=ttranvd64F+((CodBias[i])*(CodBias[i])*mt*d);
+                       tranvdw64F=tranvdw64F+((weights[2][1])*(CodBias[i])*mt*d);  //****************
+                       ttranvdw64F=ttranvdw64F+((weights[2][1])*(weights[2][1])*(CodBias[i])*(CodBias[i])*mt*d);
+                    //   ttranv=ttranv+1;
+                               }
+                                                        //nor *  //nor * and nor *
+              }
+       if (((codonpos==2)||(codonpos==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[3][i]!=GCodes[3][ii])) {
+                if (transition(GCodes[3][i], GCodes[3][ii])){
+                     // if (STOP(GCodes[0][i], GCodes[0][ii])) d=0; //* or *
+                       // else {d=1; ttrans=ttrans+1; ntt2=ntt2+1; }
+
+                        if (CodBias[i]==1) mt=0; else
+                        mt=1; d=1;
+                    //global mean
+                       sumt2=sumt2+((CodBias[i])*mt*d);  //cb cg20
+                       sumw2=sumw2+((CodBias[i])*(CodBias[i])*mt*d); //w cg20
+                       sp2=sp2+((weights[1][0])*(CodBias[i])*mt*d); //w+cb cg20
+                       spd2=spd2+(((weights[1][0])*(CodBias[i]))*((weights[1][0])*(CodBias[i])*mt*d));// (w+cb)(w+cb) cg20
+
+                       spaa=spaa+((weights[1][0])*(Faas[i])*mt*d); //w+cb cg20
+                       spaa2=spaa2+((weights[1][0])*(Faas[i])*(weights[1][0])*(Faas[i])*mt*d); //w+cb cg20
+                       spaaF=spaaF+((weights[1][0])*(Faas[i])*mt*d); //w+cb cg20
+                       spaa2F=spaa2F+((weights[1][0])*(Faas[i])*(weights[1][0])*(Faas[i])*mt*d); //w+cb cg20
+
+                       transd64=transd64+((CodBias[i])*mt*d);  //****************
+                       ttransd64=ttransd64+((CodBias[i])*(CodBias[i])*mt*d);
+                       transdw64=transdw64+((weights[1][0])*(CodBias[i])*mt*d);  //****************
+                       ttransdw64=ttransdw64+((weights[1][0])*(weights[1][0])*(CodBias[i])*(CodBias[i])*mt*d);
+
+                       sumt2F=sumt2F+((CodBias[i])*mt*d);  //cb cg20
+                       sumw2F=sumw2F+((CodBias[i])*(CodBias[i])*mt*d); //w cg20
+                       sp2F=sp2F+((weights[1][0])*(CodBias[i])*mt*d); //w+cb cg20
+                       spd2F=spd2F+(((weights[1][0])*(CodBias[i]))*((weights[1][0])*(CodBias[i])*mt*d));// (w+cb)(w+cb) cg20
+
+                       transd64F=transd64F+((CodBias[i])*mt*d);  //****************
+                       ttransd64F=ttransd64F+((CodBias[i])*(CodBias[i])*mt*d);
+                       transdw64F=transdw64F+((weights[1][0])*(CodBias[i])*mt*d);  //****************
+                       ttransdw64F=ttransdw64F+((weights[1][0])*(weights[1][0])*(CodBias[i])*(CodBias[i])*mt*d);
+                      // ttrans=ttrans+1;
+                               }
+                 if (transversion(GCodes[3][i], GCodes[3][ii])){
+                      if (CodBias[i]==1) mt=0; else
+                        mt=1; d=1;
+                    //if (STOP(GCodes[0][i], GCodes[0][ii])) d=0; //* or *
+                      // else {d=1; ttranv=ttranv+1; ntt2=ntt2+1; }
+
+                        //global mean
+                        sumt2=sumt2+((CodBias[i])*mt*d);  //cb cg20
+                       sumw2=sumw2+((CodBias[i])*(CodBias[i])*mt*d); //w cg20
+                       sp2=sp2+((weights[1][1])*(CodBias[i])*mt*d); //w+cb cg20
+                       spd2=spd2+(((weights[1][1])*(CodBias[i]))*((weights[1][1])*(CodBias[i])*mt*d));// (w+cb)(w+cb) cg20
+
+                        spaa=spaa+((weights[1][1])*(Faas[i])*mt*d); //w+cb cg20
+                       spaa2=spaa2+((weights[1][1])*(Faas[i])*(weights[1][1])*(Faas[i])*mt*d); //w+cb cg20
+                       spaaF=spaaF+((weights[1][1])*(Faas[i])*mt*d); //w+cb cg20
+                       spaa2F=spaa2F+((weights[1][1])*(Faas[i])*(weights[1][1])*(Faas[i])*mt*d); //w+cb cg20
+
+                       tranvd64=tranvd64+((CodBias[i])*mt*d);  //****************
+                       ttranvd64=ttranvd64+((CodBias[i])*(CodBias[i])*mt*d);
+                       tranvdw64=tranvdw64+((weights[1][1])*(CodBias[i])*mt*d);  //****************
+                       ttranvdw64=ttranvdw64+((weights[1][1])*(weights[1][1])*(CodBias[i])*(CodBias[i])*mt*d);
+
+                       sumt2F=sumt2F+((CodBias[i])*mt*d);  //cb cg20
+                       sumw2F=sumw2F+((CodBias[i])*(CodBias[i])*mt*d); //w cg20
+                       sp2F=sp2F+((weights[1][1])*(CodBias[i])*mt*d); //w+cb cg20
+                       spd2F=spd2F+(((weights[1][1])*(CodBias[i]))*((weights[1][1])*(CodBias[i])*mt*d));// (w+cb)(w+cb) cg20
+
+                       tranvd64F=tranvd64F+((CodBias[i])*mt*d);  //****************
+                       ttranvd64F=ttranvd64F+((CodBias[i])*(CodBias[i])*mt*d);
+                       tranvdw64F=tranvdw64F+((weights[1][1])*(CodBias[i])*mt*d);  //****************
+                       ttranvdw64F=ttranvdw64F+((weights[1][1])*(weights[1][1])*(CodBias[i])*(CodBias[i])*mt*d);
+                    //   ttranv=ttranv+1;
+                               }
+                                 }
+       if (((codonpos==1)||(codonpos==0))&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[2][i]!=GCodes[2][ii])) {
+                // cout<<po2.first<<" ";
+                 //if (STOP(GCodes[0][i], GCodes[0][ii])) d=0; //* or *
+                   //     else {d=1; ttrans=ttrans+1; ntt1=ntt1+1; }
+
+                  if (transition(GCodes[2][i], GCodes[2][ii])){
+                      if (CodBias[i]==1) mt=0; else
+                        mt=1; d=1;
+                        //global mean
+                       sumt1=sumt1+((CodBias[i])*mt*d);  //cb cg20
+                       sumw1=sumw1+((CodBias[i])*(CodBias[i])*mt*d); //w cg20
+                       sp1=sp1+((weights[0][0])*(CodBias[i])*mt*d); //w+cb cg20
+                       spd1=spd1+(((weights[0][0])*(CodBias[i]))*((weights[0][0])*(CodBias[i])*mt*d));// (w+cb)(w+cb) cg20
+
+                        spaa=spaa+((weights[0][0])*(Faas[i])*mt*d); //w+cb cg20
+                       spaa2=spaa2+((weights[0][0])*(Faas[i])*(weights[0][0])*(Faas[i])*mt*d); //w+cb cg20
+                       spaaF=spaaF+((weights[0][0])*(Faas[i])*mt*d); //w+cb cg20
+                       spaa2F=spaa2F+((weights[0][0])*(Faas[i])*(weights[0][0])*(Faas[i])*mt*d); //w+cb cg20
+
+                       transd64=transd64+((CodBias[i])*mt*d);  //****************
+                       ttransd64=ttransd64+((CodBias[i])*(CodBias[i])*mt*d);
+                       transdw64=transdw64+((weights[0][0])*(CodBias[i])*mt*d);  //****************
+                       ttransdw64=ttransdw64+((weights[0][0])*(weights[0][0])*(CodBias[i])*(CodBias[i])*mt*d);
+
+                       sumt1F=sumt1F+((CodBias[i])*mt*d);  //cb cg20
+                       sumw1F=sumw1F+((CodBias[i])*(CodBias[i])*mt*d); //w cg20
+                       sp1F=sp1F+((weights[0][0])*(CodBias[i])*mt*d); //w+cb cg20
+                       spd1F=spd1F+(((weights[0][0])*(CodBias[i]))*((weights[0][0])*(CodBias[i])*mt*d));// (w+cb)(w+cb) cg20
+
+                       transd64F=transd64F+((CodBias[i])*mt*d);  //****************
+                       ttransd64F=ttransd64F+((CodBias[i])*(CodBias[i])*mt*d);
+                       transdw64F=transdw64F+((weights[0][0])*(CodBias[i])*mt*d);  //****************
+                       ttransdw64F=ttransdw64F+((weights[0][0])*(weights[0][0])*(CodBias[i])*(CodBias[i])*mt*d);
+                    }
+                 if (transversion(GCodes[2][i], GCodes[2][ii])){
+                     // if (STOP(GCodes[0][i], GCodes[0][ii])) d=0; //* or *
+                     //  else {d=1; ttranv=ttranv+1; ntt1=ntt1+1; }
+                       if (CodBias[i]==1) mt=0; else
+                        mt=1; d=1;
+                     //global mean
+                     sumt1=sumt1+((CodBias[i])*mt*d);  //cb cg20
+                       sumw1=sumw1+((CodBias[i])*(CodBias[i])*mt*d); //w cg20
+                       sp1=sp1+((weights[0][1])*(CodBias[i])*mt*d); //w+cb cg20
+                       spd1=spd1+(((weights[0][1])*(CodBias[i]))*((weights[0][1])*(CodBias[i])*mt*d));// (w+cb)(w+cb) cg20
+
+                       spaa=spaa+((weights[0][1])*(Faas[i])*mt*d); //w+cb cg20
+                       spaa2=spaa2+((weights[0][1])*(Faas[i])*(weights[0][1])*(Faas[i])*mt*d); //w+cb cg20
+                       spaaF=spaaF+((weights[0][1])*(Faas[i])*mt*d); //w+cb cg20
+                       spaa2F=spaa2F+((weights[0][1])*(Faas[i])*(weights[0][1])*(Faas[i])*mt*d); //w+cb cg20
+
+                       tranvd64=tranvd64+((CodBias[i])*mt*d);  //****************
+                       ttranvd64=ttranvd64+((CodBias[i])*(CodBias[i])*mt*d);
+                       tranvdw64=tranvdw64+((weights[0][1])*(CodBias[i])*mt*d);  //****************
+                       ttranvdw64=ttranvdw64+((weights[0][1])*(weights[0][1])*(CodBias[i])*(CodBias[i])*mt*d);
+
+                       sumt1F=sumt1F+((CodBias[i])*mt*d);  //cb cg20
+                       sumw1F=sumw1F+((CodBias[i])*(CodBias[i])*mt*d); //w cg20
+                       sp1F=sp1F+((weights[0][1])*(CodBias[i])*mt*d); //w+cb cg20
+                       spd1F=spd1F+(((weights[0][1])*(CodBias[i]))*((weights[0][1])*(CodBias[i])*mt*d));// (w+cb)(w+cb) cg20
+
+                       tranvd64F=tranvd64F+((CodBias[i])*mt*d);  //****************
+                       ttranvd64F=ttranvd64F+((CodBias[i])*(CodBias[i])*mt*d);
+                       tranvdw64F=tranvdw64F+((weights[0][1])*(CodBias[i])*mt*d);  //****************
+                       ttranvdw64F=ttranvdw64F+((weights[0][1])*(weights[0][1])*(CodBias[i])*(CodBias[i])*mt*d);
+                                         }
+
+                     }
+                 }
+                 if (i!=ii){
+                 if (((codonpos==3)||(codonpos==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]!=GCodes[4][ii])){
+                     if (transition(GCodes[4][i], GCodes[4][ii]))   ttrans=ttrans+1;
+                    if (transversion(GCodes[4][i], GCodes[4][ii])) ttranv=ttranv+1;
+                    nts3=nts3+1;                                         //nor *  //nor * and nor *
+                            }
+       if (((codonpos==2)||(codonpos==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[3][i]!=GCodes[3][ii])) {
+                   if (transition(GCodes[3][i], GCodes[3][ii]))   ttrans=ttrans+1;
+                    if (transversion(GCodes[3][i], GCodes[3][ii])) ttranv=ttranv+1;
+                   nts2=nts2+1;
+                }
+       if (((codonpos==1)||(codonpos==0))&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[2][i]!=GCodes[2][ii])) {
+                        if (transition(GCodes[2][i], GCodes[2][ii]))  ttrans=ttrans+1;
+                          if (transversion(GCodes[2][i], GCodes[2][ii])) ttranv=ttranv+1;
+                           nts1=nts1+1;
+                     }
+                        }
+
+             }
+              sT4=sT4+((sumt3F+sumt2F+sumt1F)*(sumt3F+sumt2F+sumt1F));             //le term 2 dans T4
+           sT41=sT41+(sumt1F*sumt1F);           //le term 2 dans T4
+           sT42=sT42+(sumt2F*sumt2F);            //le term 2 dans T4
+           sT43=sT43+(sumt3F*sumt3F);             //le term 2 dans T4
+
+           sT4w=sT4w+((sp1F+sp2F+sp3F)*(sp1F+sp2F+sp3F));             //le term 2 dans T4
+           sT4w1=sT4w1+(sp1F*sp1F);          //le term 2 dans T4
+           sT4w2=sT4w2+(sp2F*sp2F);          //le term 2 dans T4
+           sT4w3=sT4w3+(sp3F*sp3F);          //le term 2 dans T4
+
+           sT4wtrans=sT4wtrans+(transdw64F*transdw64F); //le term T3
+           sT4trans=sT4trans+(transd64F*transd64F); //le term T3
+           sT4wtranv=sT4wtranv+(tranvdw64F*tranvdw64F); //le term T3
+           sT4tranv=sT4tranv+(tranvd64F*tranvd64F); //le term T3
+           sT4aa=sT4aa+(spaaF*spaaF);
+
+            sT3aa=sT3aa+((spaaF*spaaF)-spaa2F);
+           sT3w1=sT3w1+((sp1F*sp1F)-spd1F); //le term T3
+           sT3w2=sT3w2+((sp2F*sp2F)-spd2F); //le term T3
+           sT3w3=sT3w3+((sp3F*sp3F)-spd3F); //le term T3
+
+           sT3w=sT3w+(((sp1F+sp2F+sp3F)*(sp1F+sp2F+sp3F))-(spd1F+spd2F+spd3F));
+           sT31=sT31+((sumt1F*sumt1F)-sumw1F); //le term T3
+           sT32=sT32+((sumt2F*sumt2F)-sumw2F); //le term T3
+           sT33=sT33+((sumt3F*sumt3F)-sumw3F); //le term T3
+
+           sT3=sT3+(((sumt3F+sumt2F+sumt1F)*(sumt3F+sumt2F+sumt1F))-(sumw3F+sumw2F+sumw1F));
+           sT3wtrans=sT3wtrans+((transdw64F*transdw64F)-ttransdw64F); //le term T3
+           sT3wtranv=sT3wtranv+((tranvdw64F*tranvdw64F)-ttranvdw64F); //le term T3
+           sT3trans=sT3trans+((transd64F*transd64F)-ttransd64F); //le term T3
+           sT3tranv=sT3tranv+((tranvd64F*tranvd64F)-ttranvd64F); //le term T3
+
+      }
+      vector< double > res;
+
+      res.push_back((sumt2+sumt1+sumt3));
+      res.push_back((sp2+sp1+sp3));    //media global  0   cb +w
+        //cb
+      res.push_back(spaa);                //faa+w
+      res.push_back(sumt1);                //cb1
+      res.push_back(sumt2);                //cb2
+      res.push_back(sumt3);                 //cb3
+      res.push_back(sp1);                   //cb+w1
+      res.push_back(sp2);                   //cb+w2
+      res.push_back(sp3);                   //cb+w3
+      res.push_back(transd64);
+      res.push_back(transdw64);
+      res.push_back(tranvd64);
+      res.push_back(tranvdw64);
+     //12
+
+      res.push_back(2*(sumw2+sumw1+sumw3));
+       res.push_back(2*(spd2+spd1+spd3));          // cb+w * cb+w variance term 13
+             //cb*cb
+       res.push_back(2*spaa2);                      // faa*faa
+       res.push_back(2*sumw1);                      //cb*cb1
+       res.push_back(2*sumw2);                        //cb*cb2
+       res.push_back(2*sumw3);                       //cb*cb3
+       res.push_back(2*spd1);                        //
+       res.push_back(2*spd2);
+       res.push_back(2*spd3);
+       res.push_back(2*ttransd64);
+       res.push_back(2*ttransdw64);
+        res.push_back(2*ttranvd64);
+       res.push_back(2*ttranvdw64);  //25
+
+      res.push_back(((sumt3+sumt2+sumt1)*(sumt3+sumt2+sumt1))+(2*(sumw3+sumw2+sumw1))-(4*sT4)); //          26    // pour le T4
+      res.push_back(((sp3+sp2+sp1)*(sp3+sp2+sp1))+(2*(spd3+spd2+spd1))-(4*sT4w)); //       27
+      res.push_back((spaa*spaa)+(2*spaa2)-(4*sT4aa));                             //   28
+      res.push_back((sumt1*sumt1)+(2*sumw1)-(4*sT41));    //                                   29
+      res.push_back((sumt2*sumt2)+(2*sumw2)-(4*sT42));   //                                    30
+      res.push_back((sumt3*sumt3)+(2*sumw3)-(4*sT43));   //                                    31
+      res.push_back((sp1*sp1)+(2*spd1)-(4*sT4w1));    //                                   32
+      res.push_back((sp2*sp2)+(2*spd2)-(4*sT4w2));   //                                    33
+      res.push_back((sp3*sp3)+(2*spd3)-(4*sT4w3));    //                                   34
+      res.push_back((transd64*transd64)+(2*ttransd64)-(4*sT4trans));   //                                   35
+      res.push_back((transdw64*transdw64)+(2*ttransdw64)-(4*sT4wtrans));  //                                   36
+      res.push_back((tranvd64*tranvd64)+(2*ttranvd64)-(4*sT4tranv));   //                                   37
+      res.push_back((tranvdw64*tranvdw64)+(2*ttranvdw64)-(4*sT4wtranv));   //  38
+
+
+      res.push_back(4*sT3); //co, co*co cg20  -- daa  0              39       // pour le T3
+      res.push_back(4*sT3w); //w+da cg20    -- daa                    40     //T3
+      res.push_back(4*sT3aa);                        //41
+      res.push_back(4*sT31);    //                                   42
+      res.push_back(4*sT32);   //                                    43
+      res.push_back(4*sT33);   //                                    44
+      res.push_back(4*sT3w1);    //                                   45
+      res.push_back(4*sT3w2);   //                                    46
+      res.push_back(4*sT3w3);    //                                   47
+      res.push_back(4*sT3trans);   //                                   48
+      res.push_back(4*sT3wtrans);  //                                   49
+      res.push_back(4*sT3tranv);   //                                   50
+      res.push_back(4*sT3wtranv);   //                                  51
+
+       res.push_back((nts1+nts2+nts3)); //(w+cb)*(w+cb) cg21 52
+       res.push_back((nts1+nts2+nts3));  // co*co  53
+      res.push_back((nts1+nts2+nts3));  //              54
+      res.push_back((nts1)); //w*w cg21              55
+      res.push_back((nts2));
+      res.push_back((nts3));
+      res.push_back((nts1));
+      res.push_back((nts2));
+      res.push_back((nts3)); //
+      res.push_back(ttrans); //
+      res.push_back(ttrans); //
+      res.push_back(ttranv); //
+      res.push_back(ttranv);  //64
+
+    return res;
+ }
+
+ vector< double > permGenCodes2(string alp, const vector <double>  &CodBias, const vector <double>  &Faas,  const vector <string> &GCodes) {
+  //weight factors for global mean and variance
+  int codonpos=0;
+  pair<int,char> po, po2;
+
+  int w, mt, nt=0, nt1=0, nt2=0, nt3=0;
+  int ntt=0, ntt1=0, ntt2=0, ntt3=0;
+  int nts1=0, nts2=0, nts3=0;
+  int ntts1=0, ntts2=0, ntts3=0;
+
+  double sumt1=0, sumt2=0, sumt3=0, sumw1=0, sumw2=0, sumw3=0;
+  double sp1=0, sp2=0, sp3=0, spd1=0, spd2=0, spd3=0;
+   double sumt1F=0, sumt2F=0, sumt3F=0, sumw1F=0, sumw2F=0, sumw3F=0;
+  double sp1F=0, sp2F=0, sp3F=0, spd1F=0, spd2F=0, spd3F=0;
+
+  double ttrans=0, ttranv=0;
+
+  double sumc1=0, sumc2=0, sumc3=0, sumww1=0, sumww2=0, sumww3=0, trvwd20=0, trvd20=0, trswd20=0, trsd20=0, spao=0;
+
+ double  transd20=0, ttransd20=0, transdw20=0, ttransdw20=0,tranvd20=0, ttranvd20=0, tranvdw20=0, ttranvdw20=0;
+ double  transd20F=0, ttransd20F=0, transdw20F=0, ttransdw20F=0,tranvd20F=0, ttranvd20F=0, tranvdw20F=0, ttranvdw20F=0;
+ double sT3w1=0,sT3w2=0,sT3w3=0, sT3w=0, sT31=0, sT32=0,sT33=0, sT3=0, sT3wtrans=0,sT3trans=0, sT3wtranv=0, sT3tranv=0;
+ double sT4w3=0,sT4w2=0,sT4w1=0, sT4w=0, sT41=0, sT42=0,sT43=0, sT4=0, sT4wtrans=0,sT4trans=0, sT4wtranv=0, sT4tranv=0;
+
+double d=0, spaa=0, spaa2=0, spaaF=0, spaa2F=0, sT4aa=0, sT3aa=0;
+
+  //cout<<this->aa.length()<<endl;
+ for (unsigned int i = 0; i < GCodes[0].size(); i++)
+   {
+    po=AAnIdentify(i, alp);
+    spd1F=0, spd2F=0, spd3F=0; sp1F=0, sp2F=0, sp3F=0;
+    sumt1F=0, sumt2F=0,sumt3F=0, sumw3F=0, sumw2F=0, sumw1F=0;
+    transdw20F=0, ttransdw20F=0, tranvdw20F=0, ttranvdw20F=0;
+    spaaF=0, spaa2F=0;
+    for (unsigned int ii = 0; ii < GCodes[0].size(); ii++)
+     {
+    if (GCodes[0][i]!=GCodes[0][ii]) {
+       po2=AAnIdentify(ii, alp);  //3rst pos
+      // cout<<((Paa[po.first]-Paa[po2.first])*(Paa[po.first]-Paa[po2.first]))<<" ";
+       if (((codonpos==3)||(codonpos==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]!=GCodes[4][ii])){
+                  if (transition(GCodes[4][i], GCodes[4][ii])){
+                      if (STOP(GCodes[0][i], GCodes[0][ii])) { d=0;   }//* or *
+                         else {d=1; ttrans=ttrans+1; }
+                    //d=1;
+                     if (CodBias[i]==1) mt=0; else
+                        mt=1;  // d=1;
+                      // ttrans=ttrans+1;
+
+                       sumt3=sumt3+((CodBias[i])*d*mt);  //cb cg20
+                       sumw3=sumw3+((CodBias[i])*(CodBias[i])*d*mt); //w cg20
+                       sp3=sp3+((weights[2][0])*(CodBias[i])*d*mt); //w+cb cg20
+                       spd3=spd3+(((weights[2][0])*(CodBias[i]))*((weights[2][0])*(CodBias[i])*d*mt));// (w+cb)(w+cb) cg20
+
+                       spaa=spaa+((weights[2][0])*(Faas[i])*d*mt); //w+cb cg20
+                       spaa2=spaa2+((weights[2][0])*(Faas[i])*(weights[2][0])*(Faas[i])*d*mt); //w+cb cg20
+                       spaaF=spaaF+((weights[2][0])*(Faas[i])*d*mt); //w+cb cg20
+                       spaa2F=spaa2F+((weights[2][0])*(Faas[i])*(weights[2][0])*(Faas[i])*d*mt); //w+cb cg20
+
+                       transd20=transd20+((CodBias[i])*d*mt);  //****************
+                       ttransd20=ttransd20+((CodBias[i])*(CodBias[i])*d*mt);
+                       transdw20=transdw20+((weights[2][0])*(CodBias[i])*d*mt);  //****************
+                       ttransdw20=ttransdw20+((weights[2][0])*(weights[2][0])*(CodBias[i])*(CodBias[i])*d*mt);
+
+                       sumt3F=sumt3F+((CodBias[i])*d*mt);  //cb cg20
+                       sumw3F=sumw3F+((CodBias[i])*(CodBias[i])*d*mt); //w cg20
+                       sp3F=sp3F+((weights[2][0])*(CodBias[i])*d*mt); //w+cb cg20
+                       spd3F=spd3F+(((weights[2][0])*(CodBias[i]))*((weights[2][0])*(CodBias[i])*d*mt));// (w+cb)(w+cb) cg20
+
+                       transd20F=transd20F+((CodBias[i])*d*mt);  //****************
+                       ttransd20F=ttransd20F+((CodBias[i])*(CodBias[i])*d*mt);
+                       transdw20F=transdw20F+((weights[2][0])*(CodBias[i])*d*mt);  //****************
+                       ttransdw20F=ttransdw20F+((weights[2][0])*(weights[2][0])*(CodBias[i])*(CodBias[i])*d*mt);
+
+                        sumc3=sumc3+((CodBias[i])*d*mt); //co, co*co cg20   global mean
+                       sumww3=sumww3+((CodBias[i])*(weights[2][0])*d*mt); //w cg20
+
+                       trswd20=trswd20+((CodBias[i])*(weights[2][0])*d*mt);
+                       trsd20=trsd20+((CodBias[i])*d*mt);
+                       spao=spao+((weights[2][0])*(Faas[i])*d*mt);
+
+                                           }
+                  if (transversion(GCodes[4][i], GCodes[4][ii])){
+                       if (STOP(GCodes[0][i], GCodes[0][ii])) d=0; //* or *
+                          else {d=1; ttranv=ttranv+1;  }
+                       //d=1;
+                         if (CodBias[i]==1) mt=0; else
+                        mt=1;
+                     //  ttranv=ttranv+1;
+                       sumt3=sumt3+((CodBias[i])*d*mt);  //cb cg20
+                       sumw3=sumw3+((CodBias[i])*(CodBias[i])*d*mt); //w cg20
+                       sp3=sp3+((weights[2][1])*(CodBias[i])*d*mt); //w+cb cg20
+
+                       spd3=spd3+(((weights[2][1])*(CodBias[i]))*((weights[2][1])*(CodBias[i])*d*mt));// (w+cb)(w+cb) cg20
+                       spaa=spaa+((weights[2][1])*(Faas[i])*d*mt); //w+cb cg20
+                       spaa2=spaa2+((weights[2][1])*(Faas[i])*(weights[2][1])*(Faas[i])*d*mt); //w+cb cg20
+                       spaaF=spaaF+((weights[2][1])*(Faas[i])*d*mt); //w+cb cg20
+                       spaa2F=spaa2F+((weights[2][1])*(Faas[i])*(weights[2][1])*(Faas[i])*d*mt); //w+cb cg20
+
+                       tranvd20=tranvd20+((CodBias[i])*d*mt);  //****************
+                       ttranvd20=ttranvd20+((CodBias[i])*(CodBias[i])*d*mt);
+                       tranvdw20=tranvdw20+((weights[2][1])*(CodBias[i])*d*mt);  //****************
+                       ttranvdw20=ttranvdw20+((weights[2][1])*(weights[2][1])*(CodBias[i])*(CodBias[i])*d*mt);
+
+                       sumt3F=sumt3F+((CodBias[i])*d*mt);  //cb cg20
+                       sumw3F=sumw3F+((CodBias[i])*(CodBias[i])*d*mt); //w cg20
+                       sp3F=sp3F+((weights[2][1])*(CodBias[i])*d*mt); //w+cb cg20
+                       spd3F=spd3F+(((weights[2][1])*(CodBias[i]))*((weights[2][1])*(CodBias[i])*d*mt));// (w+cb)(w+cb) cg20
+
+                       tranvd20F=tranvd20F+((CodBias[i])*d*mt);  //****************
+                       ttranvd20F=ttranvd20F+((CodBias[i])*(CodBias[i])*d*mt);
+                       tranvdw20F=tranvdw20F+((weights[2][1])*(CodBias[i])*d*mt);  //****************
+                       ttranvdw20F=ttranvdw20F+((weights[2][1])*(weights[2][1])*(CodBias[i])*(CodBias[i])*d*mt);
+
+                       sumc3=sumc3+((CodBias[i])*d*mt); //co, co*co cg20   global mean
+                       sumww3=sumww3+((CodBias[i])*(weights[2][1])*d*mt); //w cg20
+                       trvwd20=trvwd20+((CodBias[i])*(weights[2][1])*d*mt);
+                       trvd20=trvd20+((CodBias[i])*d*mt);
+                       spao=spao+((weights[2][1])*(Faas[i])*d*mt);
+                         }
+                   nts3=nts3+1;
+                    if (!(STOP(GCodes[0][i], GCodes[0][ii]))) {
+                       nt3=nt3+1; }
+                        //nor *  //nor * and nor *
+              }
+       if (((codonpos==2)||(codonpos==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[3][i]!=GCodes[3][ii])) {
+                 if (transition(GCodes[3][i], GCodes[3][ii])){
+                     if (STOP(GCodes[0][i], GCodes[0][ii])) d=0; //* or *
+                       else  {d=1; ttrans=ttrans+1;}
+                    //  ttrans=ttrans+1;
+                        if (CodBias[i]==1) mt=0; else
+                        mt=1;//d=1;
+
+                       sumt2=sumt2+((CodBias[i])*d*mt);  //cb cg20
+                       sumw2=sumw2+((CodBias[i])*(CodBias[i])*d*mt); //w cg20
+                       sp2=sp2+((weights[1][0])*(CodBias[i])*d*mt); //w+cb cg20
+                       spd2=spd2+(((weights[1][0])*(CodBias[i]))*((weights[1][0])*(CodBias[i])*d*mt));// (w+cb)(w+cb) cg20
+
+                       spaa=spaa+((weights[1][0])*(Faas[i])*d*mt); //w+cb cg20
+                       spaa2=spaa2+((weights[1][0])*(Faas[i])*(weights[1][0])*(Faas[i])*d*mt); //w+cb cg20
+                       spaaF=spaaF+((weights[1][0])*(Faas[i])*d*mt); //w+cb cg20
+                       spaa2F=spaa2F+((weights[1][0])*(Faas[i])*(weights[1][0])*(Faas[i])*d*mt); //w+cb cg20
+
+                       transd20=transd20+((CodBias[i])*d*mt);  //****************
+                       ttransd20=ttransd20+((CodBias[i])*(CodBias[i])*d*mt);
+                       transdw20=transdw20+((weights[1][0])*(CodBias[i])*d*mt);  //****************
+                       ttransdw20=ttransdw20+((weights[1][0])*(weights[1][0])*(CodBias[i])*(CodBias[i])*d*mt);
+
+                       sumt2F=sumt2F+((CodBias[i])*d*mt);  //cb cg20
+                       sumw2F=sumw2F+((CodBias[i])*(CodBias[i])*d*mt); //w cg20
+                       sp2F=sp2F+((weights[1][0])*(CodBias[i])*d*mt); //w+cb cg20
+                       spd2F=spd2F+(((weights[1][0])*(CodBias[i]))*((weights[1][0])*(CodBias[i])*d*mt));// (w+cb)(w+cb) cg20
+
+                       transd20F=transd20F+((CodBias[i])*d*mt);  //****************
+                       ttransd20F=ttransd20F+((CodBias[i])*(CodBias[i])*d*mt);
+                       transdw20F=transdw20F+((weights[1][0])*(CodBias[i])*d*mt);  //****************
+                       ttransdw20F=ttransdw20F+((weights[1][0])*(weights[1][0])*(CodBias[i])*(CodBias[i])*d*mt);
+
+                       sumc2=sumc2+((CodBias[i])*d*mt); //co, co*co cg20   global mean
+                       sumww2=sumww2+((CodBias[i])*(weights[1][0])*d*mt); //w cg20
+                       trswd20=trswd20+((CodBias[i])*(weights[1][0])*d*mt);
+                       trsd20=trsd20+((CodBias[i])*d*mt);
+                       spao=spao+((weights[1][0])*(Faas[i])*d*mt);
+                               }
+                 if (transversion(GCodes[3][i], GCodes[3][ii])){
+                   if (STOP(GCodes[0][i], GCodes[0][ii])) d=0; //* or *
+                      else{ d=1; ttranv=ttranv+1; }
+                    // ttranv=ttranv+1;
+                       if (CodBias[i]==1) mt=0; else
+                        mt=1; //d=1;
+
+                       sumt2=sumt2+((CodBias[i])*d*mt);  //cb cg20
+                       sumw2=sumw2+((CodBias[i])*(CodBias[i])*d*mt); //w cg20
+                       sp2=sp2+((weights[1][1])*(CodBias[i])*d*mt); //w+cb cg20
+                       spd2=spd2+(((weights[1][1])*(CodBias[i]))*((weights[1][1])*(CodBias[i])*d*mt));// (w+cb)(w+cb) cg20
+
+                        spaa=spaa+((weights[1][1])*(Faas[i])*d*mt); //w+cb cg20
+                       spaa2=spaa2+((weights[1][1])*(Faas[i])*(weights[1][1])*(Faas[i])*d*mt); //w+cb cg20
+                       spaaF=spaaF+((weights[1][1])*(Faas[i])*d*mt); //w+cb cg20
+                       spaa2F=spaa2F+((weights[1][1])*(Faas[i])*(weights[1][1])*(Faas[i])*d*mt); //w+cb cg20
+
+                       tranvd20=tranvd20+((CodBias[i])*d*mt);  //****************
+                       ttranvd20=ttranvd20+((CodBias[i])*(CodBias[i])*d*mt);
+                       tranvdw20=tranvdw20+((weights[1][1])*(CodBias[i])*d*mt);  //****************
+                       ttranvdw20=ttranvdw20+((weights[1][1])*(weights[1][1])*(CodBias[i])*(CodBias[i])*d*mt);
+
+                       sumt2F=sumt2F+((CodBias[i])*d*mt);  //cb cg20
+                       sumw2F=sumw2F+((CodBias[i])*(CodBias[i])*d*mt); //w cg20
+                       sp2F=sp2F+((weights[1][1])*(CodBias[i])*d*mt); //w+cb cg20
+                       spd2F=spd2F+(((weights[1][1])*(CodBias[i]))*((weights[1][1])*(CodBias[i])*d*mt));// (w+cb)(w+cb) cg20
+
+                       tranvd20F=tranvd20F+((CodBias[i])*d*mt);  //****************
+                       ttranvd20F=ttranvd20F+((CodBias[i])*(CodBias[i])*d*mt);
+                       tranvdw20F=tranvdw20F+((weights[1][1])*(CodBias[i])*d*mt);  //****************
+                       ttranvdw20F=ttranvdw20F+((weights[1][1])*(weights[1][1])*(CodBias[i])*(CodBias[i])*d*mt);
+
+                       sumc2=sumc2+((CodBias[i])*d*mt); //co, co*co cg20   global mean
+                       sumww2=sumww2+((CodBias[i])*(weights[1][1])*d*mt); //w cg20
+                       trvwd20=trvwd20+((CodBias[i])*(weights[1][1])*d*mt);
+                       trvd20=trvd20+((CodBias[i])*d*mt);
+                       spao=spao+((weights[1][1])*(Faas[i])*d*mt);
+                               }
+                 nts2=nts2+1;
+                 if (!(STOP(GCodes[0][i], GCodes[0][ii]))) {
+                       nt2=nt2+1; }
+                        //nor *  //nor * and nor *
+             }
+       if (((codonpos==1)||(codonpos==0))&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[2][i]!=GCodes[2][ii])) {
+                // cout<<po2.first<<" ";
+                 if (transition(GCodes[2][i], GCodes[2][ii])){
+                     if (STOP(GCodes[0][i], GCodes[0][ii])) d=0; //* or *
+                       else {ttrans=ttrans+1;d=1; }
+                      // ttrans=ttrans+1;//d=1;
+                         if (CodBias[i]==1) mt=0; else
+                        mt=1; //cg20
+
+                       sumt1=sumt1+((CodBias[i])*d*mt);  //cb cg20
+                       sumw1=sumw1+((CodBias[i])*(CodBias[i])*d*mt); //w cg20
+                       sp1=sp1+((weights[0][0])*(CodBias[i])*d*mt); //w+cb cg20
+                       spd1=spd1+(((weights[0][0])*(CodBias[i]))*((weights[0][0])*(CodBias[i])*d*mt));// (w+cb)(w+cb) cg20
+
+                       transd20=transd20+((CodBias[i])*d*mt);  //****************
+                       ttransd20=ttransd20+((CodBias[i])*(CodBias[i])*d*mt);
+                       transdw20=transdw20+((weights[0][0])*(CodBias[i])*d*mt);  //****************
+                       ttransdw20=ttransdw20+((weights[0][0])*(weights[0][0])*(CodBias[i])*(CodBias[i])*d*mt);
+
+                        spaa=spaa+((weights[0][0])*(Faas[i])*d*mt); //w+cb cg20
+                       spaa2=spaa2+((weights[0][0])*(Faas[i])*(weights[0][0])*(Faas[i])*d*mt); //w+cb cg20
+                       spaaF=spaaF+((weights[0][0])*(Faas[i])*d*mt); //w+cb cg20
+                       spaa2F=spaa2F+((weights[0][0])*(Faas[i])*(weights[0][0])*(Faas[i])*d*mt); //w+cb cg20
+
+                       sumt1F=sumt1F+((CodBias[i])*d*mt);  //cb cg20
+                       sumw1F=sumw1F+((CodBias[i])*(CodBias[i])*d*mt); //w cg20
+                       sp1F=sp1F+((weights[0][0])*(CodBias[i])*d*mt); //w+cb cg20
+                       spd1F=spd1F+(((weights[0][0])*(CodBias[i]))*((weights[0][0])*(CodBias[i])*d*mt));// (w+cb)(w+cb) cg20
+
+                       transd20F=transd20F+((CodBias[i])*d*mt);  //****************
+                       ttransd20F=ttransd20F+((CodBias[i])*(CodBias[i])*d*mt);
+                       transdw20F=transdw20F+((weights[0][0])*(CodBias[i])*d*mt);  //****************
+                       ttransdw20F=ttransdw20F+((weights[0][0])*(weights[0][0])*(CodBias[i])*(CodBias[i])*d*mt);
+
+                         sumc1=sumc1+((CodBias[i])*d*mt); //co, co*co cg20   global mean
+                       sumww1=sumww1+((CodBias[i])*(weights[0][0])*d*mt); //w cg20
+                       trswd20=trswd20+((CodBias[i])*(weights[0][0])*d*mt);
+                       trsd20=trsd20+((CodBias[i])*d*mt);
+                       spao=spao+((weights[0][0])*(Faas[i])*d*mt);
+                        }
+                 if (transversion(GCodes[2][i], GCodes[2][ii])){
+                    if (STOP(GCodes[0][i], GCodes[0][ii])) d=0; //* or *
+                      else {d=1; ttranv=ttranv+1;}
+                      //d=1; ttranv=ttranv+1;
+                       if (CodBias[i]==1) mt=0; else
+                        mt=1;
+
+                       sumt1=sumt1+((CodBias[i])*d*mt);  //cb cg20
+                        sp1=sp1+((weights[0][1])*(CodBias[i])*d*mt); //w+cb cg2
+                       sumw1=sumw1+((CodBias[i])*(CodBias[i])*d*mt); //w cg20
+                       spd1=spd1+(((weights[0][1])*(CodBias[i]))*((weights[0][1])*(CodBias[i])*d*mt));// (w+cb)(w+cb) cg20
+
+                       tranvd20=tranvd20+((CodBias[i])*d*mt);  //****************
+                       ttranvd20=ttranvd20+((CodBias[i])*(CodBias[i])*d*mt);
+                       tranvdw20=tranvdw20+((weights[0][1])*(CodBias[i])*d*mt);  //****************
+                       ttranvdw20=ttranvdw20+((weights[0][1])*(weights[0][1])*(CodBias[i])*(CodBias[i])*d*mt);
+
+                        spaa=spaa+((weights[0][1])*(Faas[i])*d*mt); //w+cb cg20
+                       spaa2=spaa2+((weights[0][1])*(Faas[i])*(weights[0][1])*(Faas[i])*d*mt); //w+cb cg20
+                       spaaF=spaaF+((weights[0][1])*(Faas[i])*d*mt); //w+cb cg20
+                       spaa2F=spaa2F+((weights[0][1])*(Faas[i])*(weights[0][1])*(Faas[i])*d*mt); //w+cb cg20
+
+                       sumt1F=sumt1F+((CodBias[i])*d*mt);  //cb cg20
+                       sumw1F=sumw1F+((CodBias[i])*(CodBias[i])*d*mt); //w cg20
+                       sp1F=sp1F+((weights[0][1])*(CodBias[i])*d*mt); //w+cb cg20
+                       spd1F=spd1F+(((weights[0][1])*(CodBias[i]))*((weights[0][1])*(CodBias[i])*d*mt));// (w+cb)(w+cb) cg20
+
+                       tranvd20F=tranvd20F+((CodBias[i])*d*mt);  //****************
+                       ttranvd20F=ttranvd20F+((CodBias[i])*(CodBias[i])*d*mt);
+                       tranvdw20F=tranvdw20F+((weights[0][1])*(CodBias[i])*d*mt);  //****************
+                       ttranvdw20F=ttranvdw20F+((weights[0][1])*(weights[0][1])*(CodBias[i])*(CodBias[i])*d*mt);
+
+                     sumc1=sumc1+((CodBias[i])*d*mt); //co, co*co cg20   global mean
+                       sumww1=sumww1+((CodBias[i])*(weights[0][1])*d*mt); //w cg20
+                       trvwd20=trvwd20+((CodBias[i])*(weights[0][1])*d*mt);
+                       trvd20=trvd20+((CodBias[i])*d*mt);
+                       spao=spao+((weights[0][1])*(Faas[i])*d*mt);
+                    }
+                  nts1=nts1+1;
+                    if (!(STOP(GCodes[0][i], GCodes[0][ii]))) {
+                        nt1=nt1+1; }
+                         //nor * and nor *
+                }
+            }
+      else if ((GCodes[0][i]==GCodes[0][ii])&&(i!=ii)) {
+       po2=AAnIdentify(ii,alp);  //3rst pos
+       if (((codonpos==3)||(codonpos==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]!=GCodes[4][ii])){
+                 ntts3=ntts3+1;
+                if (!(STOP(GCodes[0][i], GCodes[0][ii]))){
+                         if (transversion(GCodes[4][i], GCodes[4][ii])) ttranv=ttranv+1;
+                       if (transition(GCodes[4][i], GCodes[4][ii]))  ttrans=ttrans+1;
+                        ntt3=ntt3+1;   }
+                        //nor * //nor * and nor *
+        }
+       if (((codonpos==2)||(codonpos==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[3][i]!=GCodes[3][ii])) {
+              ntts2=ntts2+1;
+              if (!(STOP(GCodes[0][i], GCodes[0][ii]))){
+                         if (transversion(GCodes[3][i], GCodes[3][ii])) ttranv=ttranv+1;
+                       if (transition(GCodes[3][i], GCodes[3][ii]))  ttrans=ttrans+1;
+                        ntt2=ntt2+1;}
+                        //nor *  //nor * and nor *
+             }
+       if (((codonpos==1)||(codonpos==0))&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[2][i]!=GCodes[2][ii])) {
+                // cout<<po2.first<<" ";
+                  ntts1=ntts1+1;
+                  if (!(STOP(GCodes[0][i], GCodes[0][ii]))){
+                         if (transversion(GCodes[2][i], GCodes[2][ii])) ttranv=ttranv+1;
+                       if (transition(GCodes[2][i], GCodes[2][ii]))  ttrans=ttrans+1;
+                        ntt1=ntt1+1;
+                        }
+                    //nor *  //nor * and nor *
+                }
+            }
+        }
+           sT4=sT4+((sumt3F+sumt2F+sumt1F)*(sumt3F+sumt2F+sumt1F));             //le term 2 dans T4
+           sT41=sT41+(sumt1F*sumt1F);           //le term 2 dans T4
+           sT42=sT42+(sumt2F*sumt2F);            //le term 2 dans T4
+           sT43=sT43+(sumt3F*sumt3F);             //le term 2 dans T4
+
+           sT4w=sT4w+((sp1F+sp2F+sp3F)*(sp1F+sp2F+sp3F));             //le term 2 dans T4
+           sT4w1=sT4w1+(sp1F*sp1F);          //le term 2 dans T4
+           sT4w2=sT4w2+(sp2F*sp2F);          //le term 2 dans T4
+           sT4w3=sT4w3+(sp3F*sp3F);          //le term 2 dans T4
+
+           sT4wtrans=sT4wtrans+(transdw20F*transdw20F); //le term T3
+           sT4trans=sT4trans+(transd20F*transd20F); //le term T3
+           sT4wtranv=sT4wtranv+(tranvdw20F*tranvdw20F); //le term T3
+           sT4tranv=sT4tranv+(tranvd20F*tranvd20F); //le term T3
+           sT4aa=sT4aa+(spaaF*spaaF);
+
+            sT3aa=sT3aa+((spaaF*spaaF)-spaa2F);
+           sT3w1=sT3w1+((sp1F*sp1F)-spd1F); //le term T3
+           sT3w2=sT3w2+((sp2F*sp2F)-spd2F); //le term T3
+           sT3w3=sT3w3+((sp3F*sp3F)-spd3F); //le term T3
+           sT3w=sT3w+(((sp1F+sp2F+sp3F)*(sp1F+sp2F+sp3F))-(spd1F+spd2F+spd3F));
+
+           sT31=sT31+((sumt1F*sumt1F)-sumw1F); //le term T3
+           sT32=sT32+((sumt2F*sumt2F)-sumw2F); //le term T3
+           sT33=sT33+((sumt3F*sumt3F)-sumw3F); //le term T3
+           sT3=sT3+(((sumt3F+sumt2F+sumt1F)*(sumt3F+sumt2F+sumt1F))-(sumw3F+sumw2F+sumw1F));
+
+           sT3wtrans=sT3wtrans+((transdw20F*transdw20F)-ttransdw20F); //le term T3
+           sT3wtranv=sT3wtranv+((tranvdw20F*tranvdw20F)-ttranvdw20F); //le term T3
+           sT3trans=sT3trans+((transd20F*transd20F)-ttransd20F); //le term T3
+           sT3tranv=sT3tranv+((tranvd20F*tranvd20F)-ttranvd20F); //le term T3
+
+      }
+      vector< double > res;
+
+      res.push_back((sumt1+sumt2+sumt3));    //media global  0
+      res.push_back((sp1+sp2+sp3));
+      res.push_back(spaa);
+      res.push_back(sumt1);
+      res.push_back(sumt2);
+      res.push_back(sumt3);
+      res.push_back(sp1);
+      res.push_back(sp2);
+      res.push_back(sp3);
+       res.push_back(transd20);
+      res.push_back(transdw20);
+      res.push_back(tranvd20);    //12
+      res.push_back(ttranvdw20);
+                        // variance term 13
+       res.push_back(2*(sumw2+sumw1+sumw3)); //13
+       res.push_back(2*(spd2+spd1+spd3));
+       res.push_back(2*spaa2);
+       res.push_back(2*sumw1);
+       res.push_back(2*sumw2);
+       res.push_back(2*sumw3);
+       res.push_back(2*spd1);
+       res.push_back(2*spd2);
+       res.push_back(2*spd3);
+       res.push_back(2*ttransd20);
+       res.push_back(2*ttransdw20);
+        res.push_back(2*ttranvd20);
+       res.push_back(2*ttranvdw20);  //25
+
+      res.push_back(((sumt3+sumt2+sumt1)*(sumt3+sumt2+sumt1))+(2*(sumw3+sumw2+sumw1))-(4*sT4)); //       26        // pour le T4
+      res.push_back(((sp3+sp2+sp1)*(sp3+sp2+sp1))+(2*(spd3+spd2+spd1))-(4*sT4w)); //  27
+      res.push_back((spaa*spaa)+(2*spaa2)-(4*sT4aa));                         //28
+      res.push_back((sumt1*sumt1)+(2*sumw1)-(4*sT41));    //                         29
+      res.push_back((sumt2*sumt2)+(2*sumw2)-(4*sT42));   //                                    30
+      res.push_back((sumt3*sumt3)+(2*sumw3)-(4*sT43));   //                                    31
+      res.push_back((sp1*sp1)+(2*spd1)-(4*sT4w1));    //                                   32
+      res.push_back((sp2*sp2)+(2*spd2)-(4*sT4w2));   //                                    33
+      res.push_back((sp3*sp3)+(2*spd3)-(4*sT4w3));    //                                   34
+      res.push_back((transd20*transd20)+(2*ttransd20)-(4*sT4trans));   //                                   35
+      res.push_back((transdw20*transdw20)+(2*ttransdw20)-(4*sT4wtrans));  //                                   36
+      res.push_back((tranvd20*tranvd20)+(2*ttranvd20)-(4*sT4tranv));   //                                   37
+      res.push_back((tranvdw20*tranvdw20)+(2*ttranvdw20)-(4*sT4wtranv));   //  38
+
+      res.push_back(4*sT3); //co, co*co cg20  -- daa  0              39     // pour le T3
+      res.push_back(4*sT3w); //w+da cg20    -- daa                    40    //T3
+      res.push_back(4*sT3aa);                //                       41
+      res.push_back(4*sT31);    //                                   42
+      res.push_back(4*sT32);   //                                    43
+      res.push_back(4*sT33);   //                                    44
+      res.push_back(4*sT3w1);    //                                   45
+      res.push_back(4*sT3w2);   //                                    46
+      res.push_back(4*sT3w3);    //                                   47
+      res.push_back(4*sT3trans);   //                                   48
+      res.push_back(4*sT3wtrans);  //                                   49
+      res.push_back(4*sT3tranv);   //                                   50
+      res.push_back(4*sT3wtranv);   //                                  51
+
+       res.push_back((nt1+nt2+nt3+ntt1+ntt2+ntt3)); //(w+cb)*(w+cb) 52
+       res.push_back((nt1+nt2+nt3+ntt1+ntt2+ntt3));  // co*co
+      res.push_back((nt1+nt2+nt3+ntt1+ntt2+ntt3));
+      res.push_back((nt1+ntt1)); //w*w cg21
+      res.push_back((nt2+ntt2));
+      res.push_back((nt3+ntt3));
+      res.push_back((nt1+ntt1));
+      res.push_back((nt2+ntt2));
+      res.push_back((nt3+ntt3)); //
+      res.push_back(ttrans); //
+      res.push_back(ttrans); //
+      res.push_back(ttranv); //
+      res.push_back(ttranv);  //64
+
+    return res;
+ }
+
 
  GraphGC::~GraphGC()
 {
