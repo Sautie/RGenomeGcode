@@ -274,7 +274,7 @@ vector<vector<vector<double> > >GraphGC::gcPart(int N, vector< vector<double> > 
 
    return outs;
 }
-vector<vector<vector<double> > > GraphGC::mePart(int N, double Tco, vector< vector<double> > mPaa, vector< vector<int> > nc, vector< vector<int> > nsc,  vector<double> Tbc)
+vector<vector<vector<double> > > GraphGC::mePart(int N, vector<int> Nbse, vector<int> vert, double Tco, vector< vector<double> > mPaa, vector< vector<double> > mPaa64, vector< vector<int> > nc, vector< vector<int> > nsc,  vector<double> Tbc)
 {
   double sed;
   vector<double> sb(mPaa.size(), 0);
@@ -296,8 +296,8 @@ vector<vector<vector<double> > > GraphGC::mePart(int N, double Tco, vector< vect
              for (int ii = 0; ii< 20; ii++) se[k][c]=se[k][c]+ (nc[c][i]*nc[c][ii]*((mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii])));
 
              for (int i = 0; i< nsc[c].size(); i++)
-             for (int ii = 0; ii< 20; ii++)
-                      sco[k][c]=se[k][c]+(nc[c][ii]*((mPaa[k][nsc[c][i]]-mPaa[k][ii])*(mPaa[k][nsc[c][i]]-mPaa[k][ii])));
+             for (int ii = 0; ii< vertices; ii++)
+                      sco[k][c]=se[k][c]+((mPaa64[k][nsc[c][i]]-mPaa64[k][ii])*(mPaa64[k][nsc[c][i]]-mPaa64[k][ii]));
               }
      }
   for (int c = 0; c < nc.size(); c++)
@@ -309,9 +309,9 @@ vector<vector<vector<double> > > GraphGC::mePart(int N, double Tco, vector< vect
                  Tse[c]=  Tco-sed;
   for (int k = 0; k < mPaa.size(); k++)
    {
-       mb[k][c]=(Tbc[c]*sb[k])/(N*vertices*(vertices-1));
-       mse[k][c]=((Tse[c])*(se[k][c]))/(N*vertices*(vertices-1));
-       mco[k][c]=Tco*sco[k][c];
+       mb[k][c]=(Tbc[c]*sb[k])/(Nbse[c]*20*(20-1));
+       mse[k][c]=((Tse[c])*(se[k][c]))/(Nbse[c]*vert[c]*(vert[c]-1));
+       mco[k][c]=(Tco*sco[k][c])/(N*vertices*(vertices-1));
         }
             }
       vector<vector<vector<double> > > outs;
@@ -320,6 +320,35 @@ vector<vector<vector<double> > > GraphGC::mePart(int N, double Tco, vector< vect
        outs.push_back(mco);
        return outs;
  }
+
+ /*vector<vector<vector<double> > > GraphGC::vaPart(int N, double Tco, vector< vector<double> > mPaa, vector< vector<int> > nc, vector< vector<int> > nsc,  vector<double> Tbc)
+ {
+     double s=0, ss=0, sw=0, ssw=0, s3=0;
+     //vector<double>  sw(nc.size(),0);
+   for (int i = 0; i< 64; i++)
+             for (int ii = 0; ii< 64; ii++) s=s+geneM[i][ii];
+   for (int i = 0; i< 64; i++)
+             for (int ii = 0; ii< 64; ii++) ss=ss+(geneM[i][ii]*geneM[i][ii]);
+   for (int i = 0; i< 64; i++) {
+             sw=0;
+             for (int ii = 0; ii< 64; ii++) sw=sw+geneM[i][ii];
+                 ssw=ssw+sw;
+                    }
+    for (int k = 0; k < mPaa.size(); k++)
+   {
+        for (int i = 0; i< 64; i++)
+             for (int ii = 0; ii< 64; ii++)pb[k]=pb[k]+((mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii]));
+
+       for (int i = 0; i< 64; i++) {
+             sw=0;
+             for (int ii = 0; ii< 64; ii++) sw=sw+geneM[i][ii];
+                 ssw=ssw+sw;
+                    }
+
+       }
+
+ }*/
+
 bool GraphGC::STOP(char a, char b) {
        return ((a=='*')||(b=='*'));
     }
