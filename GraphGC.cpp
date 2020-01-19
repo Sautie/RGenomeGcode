@@ -165,7 +165,7 @@ int GraphGC::GCPart(vector<int> GCassign, vector<int> GCVassign, int iv=0){  //i
       return LC;
     }
 
-vector<vector<vector<double> > >GraphGC::hPart(int N, vector< vector<double> > mPaa, vector< vector<double> > mGenm,  vector<int> GCHassign,  vector<int> GCVassign,  vector<int> GCSassign){
+vector<vector<vector<double> > >GraphGC::hPart(int N, int Nse, vector< vector<double> > mPaa, vector< vector<double> > mGenm,  vector<int> GCHassign,  vector<int> GCVassign,  vector<int> GCSassign){
 //P2
 vector<vector<vector<double> > > outs;
 vector<vector<double> > se(mPaa.size(), vector<double>(mGenm[0].size(), 0));
@@ -182,12 +182,13 @@ vector<vector<double> > co(mPaa.size(), vector<double>(mGenm[0].size(), 0));
                             for (int jj = 0; jj < vertices; jj++)
                                   if ((geneM[GCVassign[j]][jj])>0)
                                       sg=sg+ ((mGenm[g][GCVassign[j]])*(geneM[GCVassign[j]][jj])*((mPaa[k][GCVassign[j]]-mPaa[k][jj])*(mPaa[k][GCVassign[j]]-mPaa[k][jj])));
-                           se[k][g]=(1/N)*(sh+sg);
+                           se[k][g]=(sh+sg);
                            for (int j = 0; j < GCSassign.size(); j++)
                             for (int jj = 0; jj < vertices; jj++)
                                  if ((geneM[GCSassign[j]][jj])>0)
                                       ss=ss+((mGenm[g][GCSassign[j]])*(geneM[GCSassign[j]][jj])*((mPaa[k][GCSassign[j]]-mPaa[k][jj])*(mPaa[k][GCSassign[j]]-mPaa[k][jj])));
-                           co[k][g]=se[k][g]+(ss/N);
+                           co[k][g]=(se[k][g]+ss)/N;
+                           se[k][g]=(sh+sg)/Nse;
                        }
                  }
      outs.push_back(se);
@@ -223,7 +224,7 @@ int GraphGC::PartChanges(vector<int> AAssign){
    return changes;
     }
 
-vector<vector<vector<double> > >GraphGC::gcPart(int N, vector< vector<double> > mPaa, vector< vector<int> > codes, vector<int>  GCSgcassign, vector< vector<int> >GCBassign,  vector< vector<int> >GCPassign,  vector< vector<int> > GCSassign)
+vector<vector<vector<double> > >GraphGC::gcPart(int N, vector<int> Nch, vector< vector<double> > mPaa, vector< vector<int> > codes, vector<int>  GCSgcassign, vector< vector<int> >GCBassign,  vector< vector<int> >GCPassign,  vector< vector<int> > GCSassign)
 {
   vector<double> se(mPaa.size(), 0);
   vector<double> sco(mPaa.size(), 0);
@@ -240,7 +241,7 @@ vector<vector<vector<double> > >GraphGC::gcPart(int N, vector< vector<double> > 
              for (int ii = 0; ii <vertices ; ii++)
                   if ((geneM[GCSgcassign[i]][ii])>0)
                     sh=sh+ (geneM[GCSgcassign[i]][ii]*((mPaa[k][GCSgcassign[i]]-mPaa[k][ii])*(mPaa[k][GCSgcassign[i]]-mPaa[k][ii]))); //for the sgc
-        se[k]=s/N;
+        se[k]=s/Nch[0];
         sco[k]=(s+sh)/N;
         for (int c = 0; c < codes.size(); c++)
          {
@@ -249,18 +250,18 @@ vector<vector<vector<double> > >GraphGC::gcPart(int N, vector< vector<double> > 
                    for (int j = 0; j < vertices; j++)
                          if ((geneM[GCPassign[c][f]][j])>0)
                          sp=sp+(geneM[GCPassign[c][f]][j]*((mPaa[k][GCPassign[c][f]]-mPaa[k][j])*(mPaa[k][GCPassign[c][f]]-mPaa[k][j])));
-
                   for (int f = 0; f < GCBassign.size(); f++)
                    for (int ii = 0; ii < vertices; ii++)
                          if ((geneM[GCBassign[c][f]][ii])>0)
                          sb=sb+ (geneM[GCBassign[c][f]][ii]*((mPaa[k][GCBassign[c][f]]-mPaa[k][ii])*(mPaa[k][GCBassign[c][f]]-mPaa[k][ii])));
-
-                 scp[k][c]=sco[k]-(sp+sb)/N;
+                 scp[k][c]=sco[k]-(sp+sb);
                  for (int f = 0; f < GCSassign.size(); f++)
                    for (int ii = 0; ii < vertices; ii++)
                          if ((geneM[GCSassign[c][f]][ii])>0)
                           ss=ss+ (geneM[GCSassign[c][f]][ii]*((mPaa[k][GCSassign[c][f]]-mPaa[k][ii])*(mPaa[k][GCSassign[c][f]]-mPaa[k][ii])));
-                  sce[k][c]=scp[k][c]-(ss/N);
+                  sce[k][c]=(scp[k][c]-ss)/Nch[c];
+                  scp[k][c]=scp[k][c]/N;
+
                                                 }
      }
    for (int f = 0; f < mPaa.size(); f++) {

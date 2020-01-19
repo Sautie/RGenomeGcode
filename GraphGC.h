@@ -31,8 +31,8 @@ class GraphGC
        double SumProd(int);
        int GCPart(vector<int>, vector<int>, int);
        int PartChanges(vector<int> );
-       vector<vector<vector<double> > > hPart(int , vector< vector<double> > , vector< vector<double> > ,  vector<int> ,  vector<int> ,  vector<int> );
-       vector<vector<vector<double> > > gcPart(int, vector< vector<double> > , vector< vector<int> > , vector<int>  , vector< vector<int> >,  vector< vector<int> >,  vector< vector<int> > );
+       vector<vector<vector<double> > > hPart(int , int, vector< vector<double> > , vector< vector<double> > ,  vector<int> ,  vector<int> ,  vector<int> );
+       vector<vector<vector<double> > > gcPart(int, vector<int> , vector< vector<double> >, vector< vector<int> > , vector<int>, vector< vector<int> >,  vector< vector<int> >,  vector< vector<int> > );
        vector<vector<vector<double> > > mePart(int, vector<int> , vector<int> , double, vector< vector<double> >, vector< vector<double> > , vector< vector<int> >, vector< vector<int> > ,  vector<double>);
        vector <int> BChanges(const vector <string>&, int, int, int, int, int);
        vector<int> NumericRecode(string);
