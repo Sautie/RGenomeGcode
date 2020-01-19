@@ -33,7 +33,7 @@ class GraphGC
        int PartChanges(vector<int> );
        vector<vector<vector<double> > > hPart(int , vector< vector<double> > , vector< vector<double> > ,  vector<int> ,  vector<int> ,  vector<int> );
        vector<vector<vector<double> > > gcPart(int, vector< vector<double> > , vector< vector<int> > , vector<int>  , vector< vector<int> >,  vector< vector<int> >,  vector< vector<int> > );
-       vector<vector<vector<double> > > mePart(int, double, vector< vector<double> >, vector< vector<int> >, vector< vector<int> >,  vector<double>);
+       vector<vector<vector<double> > > mePart(int, vector<int> , vector<int> , double, vector< vector<double> >, vector< vector<double> > , vector< vector<int> >, vector< vector<int> > ,  vector<double>);
        vector <int> BChanges(const vector <string>&, int, int, int, int, int);
        vector<int> NumericRecode(string);
        vector< vector <int> > PairCompGC(vector<int>, vector<int>);
