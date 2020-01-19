@@ -248,7 +248,7 @@ vector<vector<vector<double> > >GraphGC::gcPart(int N, vector< vector<double> > 
                 for (int f = 0; f < GCPassign.size(); f++)
                    for (int j = 0; j < vertices; j++)
                          if ((geneM[GCPassign[c][f]][j])>0)
-                         sp=sp+ (geneM[GCPassign[c][f]][j]*((mPaa[k][GCPassign[c][f]]-mPaa[k][j])*(mPaa[k][GCPassign[c][f]]-mPaa[k][j])));
+                         sp=sp+(geneM[GCPassign[c][f]][j]*((mPaa[k][GCPassign[c][f]]-mPaa[k][j])*(mPaa[k][GCPassign[c][f]]-mPaa[k][j])));
 
                   for (int f = 0; f < GCBassign.size(); f++)
                    for (int ii = 0; ii < vertices; ii++)
@@ -273,10 +273,53 @@ vector<vector<vector<double> > >GraphGC::gcPart(int N, vector< vector<double> > 
    outs.push_back(sce);
 
    return outs;
-
 }
+vector<vector<vector<double> > > GraphGC::mePart(int N, double Tco, vector< vector<double> > mPaa, vector< vector<int> > nc, vector< vector<int> > nsc,  vector<double> Tbc)
+{
+  double sed;
+  vector<double> sb(mPaa.size(), 0);
+  vector<double>  Tse(nc.size(),0);
+  vector<vector<double> > se(mPaa.size(), vector<double>(nc.size(), 0));
+  vector<vector<double> > sco(mPaa.size(), vector<double>(nc.size(), 0));
+   vector<vector<double> > mb(nc.size(), vector<double>(mPaa.size(), 0));
+  vector<vector<double> > mse(nc.size(), vector<double>(mPaa.size(), 0));
+  vector<vector<double> > mco(nc.size(), vector<double>(mPaa.size(), 0));
+  //nsc vector per code of stoppositions, nc number of aas per cod
 
+  for (int k = 0; k < mPaa.size(); k++)
+   {
+         for (int i = 0; i< 20; i++)
+             for (int ii = 0; ii< 20; ii++) sb[k]=sb[k]+((mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii]));
+         for (int c = 0; c < nc.size(); c++)
+         {
+             for (int i = 0; i< 20; i++)
+             for (int ii = 0; ii< 20; ii++) se[k][c]=se[k][c]+ (nc[c][i]*nc[c][ii]*((mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii])));
 
+             for (int i = 0; i< nsc[c].size(); i++)
+             for (int ii = 0; ii< 20; ii++)
+                      sco[k][c]=se[k][c]+(nc[c][ii]*((mPaa[k][nsc[c][i]]-mPaa[k][ii])*(mPaa[k][nsc[c][i]]-mPaa[k][ii])));
+              }
+     }
+  for (int c = 0; c < nc.size(); c++)
+   {
+       double sed=0;
+       for (int i = 0; i< nsc[c].size(); i++)
+             for (int ii = 0; ii< vertices; ii++)
+                 sed=sed+geneM[nsc[c][i]][ii];
+                 Tse[c]=  Tco-sed;
+  for (int k = 0; k < mPaa.size(); k++)
+   {
+       mb[k][c]=(Tbc[c]*sb[k])/(N*vertices*(vertices-1));
+       mse[k][c]=((Tse[c])*(se[k][c]))/(N*vertices*(vertices-1));
+       mco[k][c]=Tco*sco[k][c];
+        }
+            }
+      vector<vector<vector<double> > > outs;
+       outs.push_back(mb);
+       outs.push_back(mse);
+       outs.push_back(mco);
+       return outs;
+ }
 bool GraphGC::STOP(char a, char b) {
        return ((a=='*')||(b=='*'));
     }
@@ -1223,7 +1266,7 @@ vector <double>  GraphGC::Reassign1(vector < vector <double> >GC201models, ofstr
     InputFile<<endl;
     return res3;
  }
-vector< double > permGenCodes64(string alp, const vector <double>  &CodBias, const vector <double>  &Faas,  const vector <string> &GCodes) {
+vector< double > GraphGC::permGenCodes64(string alp, const vector <double>  &CodBias, const vector <double>  &Faas,  const vector <string> &GCodes) {
  //Codbias, faas, fcod para cg64
   int codonpos=0;
   pair<int,char> po, po2;
@@ -1595,7 +1638,7 @@ int ntt1=0, ntt2=0, ntt3=0;
     return res;
  }
 
- vector< double > permGenCodes2(string alp, const vector <double>  &CodBias, const vector <double>  &Faas,  const vector <string> &GCodes) {
+ vector< double > GraphGC::permGenCodes2(string alp, const vector <double>  &CodBias, const vector <double>  &Faas,  const vector <string> &GCodes) {
   //weight factors for global mean and variance
   int codonpos=0;
   pair<int,char> po, po2;
