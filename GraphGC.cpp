@@ -275,16 +275,16 @@ vector<vector<vector<double> > >GraphGC::gcPart(int N, vector<int> Nch, vector< 
 
    return outs;
 }
-vector<vector<vector<double> > > GraphGC::mePart(int N, vector<int> Nbse, vector<int> vert, double Tco, vector< vector<double> > mPaa, vector< vector<double> > mPaa64, vector< vector<int> > nc, vector< vector<int> > nsc,  vector<double> Tbc)
+vector<vector<vector<double> > > GraphGC::mePart(int N, vector<int> Nbse, double Tco, vector< vector<double> > mPaa,  vector< vector<int> > nc, vector< vector<int> > nsc,  vector<double> Tbc)
 {
   double sed;
   vector<double> sb(mPaa.size(), 0);
   vector<double>  Tse(nc.size(),0);
   vector<vector<double> > se(mPaa.size(), vector<double>(nc.size(), 0));
   vector<vector<double> > sco(mPaa.size(), vector<double>(nc.size(), 0));
-   vector<vector<double> > mb(nc.size(), vector<double>(mPaa.size(), 0));
-  vector<vector<double> > mse(nc.size(), vector<double>(mPaa.size(), 0));
-  vector<vector<double> > mco(nc.size(), vector<double>(mPaa.size(), 0));
+   vector<vector<double> > mb(mPaa.size(), vector<double>(nc.size(), 0));
+  vector<vector<double> > mse(mPaa.size(), vector<double>(nc.size(), 0));
+  vector<vector<double> > mco(mPaa.size(), vector<double>(nc.size(), 0));
   //nsc vector per code of stoppositions, nc number of aas per cod
 
   for (int k = 0; k < mPaa.size(); k++)
@@ -297,8 +297,8 @@ vector<vector<vector<double> > > GraphGC::mePart(int N, vector<int> Nbse, vector
              for (int ii = 0; ii< 20; ii++) se[k][c]=se[k][c]+ (nc[c][i]*nc[c][ii]*((mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii])));
 
              for (int i = 0; i< nsc[c].size(); i++)
-             for (int ii = 0; ii< vertices; ii++)
-                      sco[k][c]=se[k][c]+((mPaa64[k][nsc[c][i]]-mPaa64[k][ii])*(mPaa64[k][nsc[c][i]]-mPaa64[k][ii]));
+             for (int ii = 0; ii< 20; ii++)
+                      sco[k][c]=se[k][c]+(nc[c][ii]*(mPaa[k][nsc[c][i]]-mPaa[k][ii])*(mPaa[k][nsc[c][i]]-mPaa[k][ii]));
               }
      }
   for (int c = 0; c < nc.size(); c++)
@@ -309,10 +309,9 @@ vector<vector<vector<double> > > GraphGC::mePart(int N, vector<int> Nbse, vector
                  sed=sed+geneM[nsc[c][i]][ii];
                  Tse[c]=  Tco-sed;
   for (int k = 0; k < mPaa.size(); k++)
-   {
-       mb[k][c]=(Tbc[c]*sb[k])/(Nbse[c]*20*(20-1));
-       mse[k][c]=((Tse[c])*(se[k][c]))/(Nbse[c]*vert[c]*(vert[c]-1));
-       mco[k][c]=(Tco*sco[k][c])/(N*vertices*(vertices-1));
+   {   mb[k][c]=(Tbc[c]*sb[k])/(Nbse[c]*380);
+       mse[k][c]=((Tse[c])*(se[k][c]))/(Nbse[c]*(64-nsc[c].size())*(63-nsc[c].size()));
+       mco[k][c]=(Tco*sco[k][c])/(N*4032);
         }
             }
       vector<vector<vector<double> > > outs;
@@ -321,34 +320,121 @@ vector<vector<vector<double> > > GraphGC::mePart(int N, vector<int> Nbse, vector
        outs.push_back(mco);
        return outs;
  }
-
- /*vector<vector<vector<double> > > GraphGC::vaPart(int N, double Tco, vector< vector<double> > mPaa, vector< vector<int> > nc, vector< vector<int> > nsc,  vector<double> Tbc)
+ vector<vector<vector<double> > > GraphGC::vaPart(vector<vector<vector<double> > > outs, vector<int> Nbse, int N, double Tco, vector< vector<double> > mPaa, vector< vector<int> > nc, vector< vector<int> > nsc,  vector< vector<double> > Tb)
  {
-     double s=0, ss=0, sw=0, ssw=0, s3=0;
+     double T4,s=0, ss=0, sw=0, ssw0=0,ssw=0, ssw2=0;
+     vector<double>  pb(mPaa.size(),0);
+     vector<double>  pb3(mPaa.size(),0);
+     vector<double>  pb4(mPaa.size(),0);
+     vector<vector<double> > pse(mPaa.size(), vector<double>(nc.size(), 0));
+     vector<vector<double> > pse3(mPaa.size(), vector<double>(nc.size(), 0));
+     vector<vector<double> > pse4(mPaa.size(), vector<double>(nc.size(), 0));
+     vector<vector<double> > pco(mPaa.size(), vector<double>(nc.size(), 0));
+     vector<vector<double> > pco3(mPaa.size(), vector<double>(nc.size(), 0));
+     vector<vector<double> > pco4(mPaa.size(), vector<double>(nc.size(), 0));
      //vector<double>  sw(nc.size(),0);
-   for (int i = 0; i< 64; i++)
-             for (int ii = 0; ii< 64; ii++) s=s+geneM[i][ii];
-   for (int i = 0; i< 64; i++)
-             for (int ii = 0; ii< 64; ii++) ss=ss+(geneM[i][ii]*geneM[i][ii]);
-   for (int i = 0; i< 64; i++) {
+    for (int i = 0; i< vertices; i++)
+             for (int ii = 0; ii< vertices; ii++) s=s+geneM[i][ii];
+    for (int i = 0; i< vertices; i++)
+             for (int ii = 0; ii< vertices; ii++) ss=ss+(geneM[i][ii]*geneM[i][ii]);
+    for (int i = 0; i< vertices; i++) {
              sw=0;
-             for (int ii = 0; ii< 64; ii++) sw=sw+geneM[i][ii];
-                 ssw=ssw+sw;
+             for (int ii = 0; ii< vertices; ii++) sw=sw+geneM[i][ii];
+                 ssw0=ssw0+(sw*sw);
                     }
-    for (int k = 0; k < mPaa.size(); k++)
+    T4=(Tco*Tco)-(4*(ssw0))+(2*ss);
+  for (int k = 0; k < mPaa.size(); k++)
    {
-        for (int i = 0; i< 64; i++)
-             for (int ii = 0; ii< 64; ii++)pb[k]=pb[k]+((mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii]));
+       ssw=0;ssw2=0;
+        for (int i = 0; i< 20; i++)
+             for (int ii = 0; ii< 20; ii++)  pb[k]=pb[k]+((mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii]));
 
-       for (int i = 0; i< 64; i++) {
+       for (int i = 0; i< 20; i++) {
              sw=0;
-             for (int ii = 0; ii< 64; ii++) sw=sw+geneM[i][ii];
-                 ssw=ssw+sw;
+             for (int ii = 0; ii< 20; ii++) sw=sw+((mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii]));
+                 ssw=ssw+(sw*sw);
+                 ssw2=ssw2+sw;
                     }
+       pb3[k]=ssw-pb[k];
+       pb4[k]=(ssw2*ssw2)-(4*pb3[k])+(2*pb[k]);
+       for (int c = 0; c < nc.size(); c++)
+       {
+        double ssw3=0, sstp=0, sstp2=0, ssu=0, sstpa=0, sstpb=0;
+           ssw=0;ssw2=0;
+            for (int i = 0; i< 20; i++)
+            for (int ii = 0; ii< 20; ii++)  pse[k][c]=pse[k][c]+(nc[c][i]*nc[c][ii])*((mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii]));
+            for (int i = 0; i< 20; i++)
+            for (int ii = 0; ii< 20; ii++)  ssu=ssu+(nc[c][i]*nc[c][ii])*((mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii]));
+            for (int i = 0; i< 20; i++) {
+             sw=0;
+            for (int ii = 0; ii< 20; ii++) {sw=sw+(nc[c][ii]*(mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii]));
+                 ssw3=ssw3+(nc[c][i]*nc[c][ii]*(mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii]));
+                                  }
+                 ssw=ssw+(nc[c][i]*sw*sw);
+                    }
+             pse3[k][c]=ssw-pse[k][c];
+             pse4[k][c]=(ssw3*ssw3)-(4*pse3[k][c])+(2*pse[k][c]);
+             for (int i = 0; i< nsc[c].size(); i++)
+                for (int ii = 0; ii< 20; ii++)
+                      sstp=(nc[c][ii]*(mPaa[k][nsc[c][i]]-mPaa[k][ii])*(mPaa[k][nsc[c][i]]-mPaa[k][ii])*(mPaa[k][nsc[c][i]]-mPaa[k][ii])*(mPaa[k][nsc[c][i]]-mPaa[k][ii]));
+              for (int i = 0; i< nsc[c].size(); i++)
+                for (int ii = 0; ii< 20; ii++)
+                      sstpb=sstpb+(nc[c][ii]*(mPaa[k][nsc[c][i]]-mPaa[k][ii])*(mPaa[k][nsc[c][i]]-mPaa[k][ii]));
 
+              for (int i = 0; i< nsc[c].size(); i++) {
+                sstpa=0;
+                for (int ii = 0; ii< 20; ii++) sstpa=sstpa+ (nc[c][ii]*(mPaa[k][nsc[c][i]]-mPaa[k][ii])*(mPaa[k][nsc[c][i]]-mPaa[k][ii]));
+                 sstp2=sstp2+(sstpa*sstpa);
+                 }
+               pco[k][c]=pse[k][c]+sstp;
+               sstp2=sstp2-sstp;
+               pco3[k][c]=pse3[k][c]+sstp2;
+               pco4[k][c]=((sstpb+ssu)*(sstpb+ssu))-(4*pco3[k][c])+(2*pco[k][c]);
+                    }
        }
+      vector<double>  Tse(nc.size(),0);
+      vector<double>  Tse3(nc.size(),0);
+      vector<double>  Tse4(nc.size(),0);
+      vector<double>  tb0(nc.size(),0);
+      vector<double>  tb3(nc.size(),0);
+      vector<double>  tb4(nc.size(),0);
+      vector <vector <vector < double > > > ovar (3, vector < vector < double > > (mPaa.size(),vector<double> (nc.size(),0)));
+   for (int c = 0; c < nc.size(); c++)
+       {
+            double tsd=0,stp=0,stp2=0, tss=0, tss1=0, tss2=0;
+            for (int i = 0; i< nsc[c].size(); i++)
+                for (int ii = 0; ii< vertices; ii++) stp=stp+geneM[nsc[c][i]][ii];
 
- }*/
+            for (int i = 0; i< nsc[c].size(); i++)
+                for (int ii = 0; ii< vertices; ii++) tsd=tsd+(geneM[nsc[c][i]][ii]*geneM[nsc[c][i]][ii]);
+
+               Tse[c]= Tco-tsd;
+            for (int i = 0; i< nsc[c].size(); i++) {
+                stp2=0;
+                for (int ii = 0; ii< vertices; ii++) stp=stp+ (geneM[nsc[c][i]][ii]);
+                 stp2=stp2+(stp*stp);
+                 }
+           Tse3[c]=ssw0-stp2;
+           Tse4[c]=((s-stp)*(s-stp))-(4*Tse3[c])+(2*Tse[c]);
+           for (int i = 0; i< Tb.size(); i++)
+                for (int ii = 0; ii< Tb[i].size(); ii++) tb0[c]=tb0[c]+(Tb[i][ii]*Tb[i][ii]);
+            for (int i = 0; i< Tb.size(); i++) {
+                tss=0;
+                for (int ii = 0; ii< Tb[i].size(); ii++) tss=tss+ (Tb[i][ii]);
+                 tss2=tss2+(tss*tss);
+                 tss1=tss1+(tss);
+                 }
+          tb3[c]=tss2-tb0[c];
+          tb4[c]=(tss1*tss1)-(4*tb3[c])+(2*tb0[c]);
+      for (int k = 0; k < mPaa.size(); k++)
+       {
+          ovar[0][k][c]=((((tb4[c]*pb4[k])/306) + ((4*tb3[c]*pb3[k])/18) + (2*tb0[c]*pb[k]))/(Nbse[c]*Nbse[c]*380))-(outs[0][k][c]*outs[0][k][c]);
+          ovar[1][k][c]=((((Tse4[c]*pse4[k][c])/((61-nsc[c].size())*(62-nsc[c].size()))) + ((4*Tse3[c]*pse3[k][c])/(62-nsc[c].size()))+(2*Tse[c]*pse[k][c]))/((63-nsc[c].size())*(64-nsc[c].size())*Nbse[c]*Nbse[c]))-(outs[1][k][c]*outs[1][k][c]);
+          ovar[2][k][c]=((((T4*pco4[k][c])/3782)+((4*ssw0*pco3[k][c])/62)+(2*ss*pco[k][c]))/(N*N*4032))-(outs[2][k][c]*outs[2][k][c]);
+         }
+               }
+    return ovar;
+ }
 
 bool GraphGC::STOP(char a, char b) {
        return ((a=='*')||(b=='*'));
@@ -419,7 +505,7 @@ for (int i = 0; i < vertices; i++)
                                    }
                                  }
                               }
-                              cout<<j<<endl;
+                              //cout<<j<<endl;
                               if (j==vertices){
                                 L[i][l]=ii;
                                 l=l+1;
