@@ -75,6 +75,10 @@ GraphGC& GraphGC::operator=(const GraphGC& g)
     }
     return *this;
 }
+
+ void GraphGC::setWG(int i, int j, double w, double g) {
+                  geneM[i][j] = geneM[i][j]+(w*g);
+    }
  void GraphGC::setW(int i, int j, double w=0) {
                   geneM[i][j] = geneM[i][j]+w;
                  // geneM[j][i] = geneM[j][i]+w;
@@ -108,9 +112,12 @@ void GraphGC::toADJL()
  void GraphGC::setWeight(int i, int j, double w=0) {
                   weights[i][j]=w;
     }
-//double* GraphGC::getWeight() {
-//    return &weight;
-//    }
+double** GraphGC::getGeneM() {
+    return geneM;
+    }
+double** GraphGC::getPhenoM() {
+    return phenoM;
+    }
 
 double GraphGC::getGW(int i, int j) {
                   return geneM[i][j];
@@ -133,12 +140,6 @@ double GraphGC::SumProd (int N){
          }
     return (s/N);
 }
-
-//introd particion genetica
-//particion por comp de codigos de func robustesse
-//funcion que usar vector de conteo aanumbers
-//introd media
-//introd variance
 
 int GraphGC::GCPart(vector<int> GCassign, vector<int> GCVassign, int iv=0){  //iv=0 GCassign: invariant set of nodes, iv=1 variable part
    int LC;
@@ -165,6 +166,25 @@ int GraphGC::GCPart(vector<int> GCassign, vector<int> GCVassign, int iv=0){  //i
       return LC;
     }
 
+double GraphGC::SumGeneM(){
+   double s=0;
+   for (int i = 0; i < vertices; i++)
+   {
+    for (int ii = 0; ii < vertices; ii++)
+          s=s+geneM[i][ii];
+         }
+      return s;
+    }
+double GraphGC::SumPhenoM(){
+   double s=0;
+   for (int i = 0; i < vertices; i++)
+   {
+    for (int ii = 0; ii < vertices; ii++)
+          s=s+phenoM[i][ii];
+         }
+      return s;
+    }
+
 vector<vector<vector<double> > >GraphGC::hPart(int N, int Nse, vector< vector<double> > mPaa, vector< vector<double> > mGenm,  vector<int> GCHassign,  vector<int> GCVassign,  vector<int> GCSassign){
 //P2
 vector<vector<vector<double> > > outs;
@@ -181,14 +201,14 @@ vector<vector<double> > co(mPaa.size(), vector<double>(mGenm[0].size(), 0));
                           for (int j = 0; j < GCVassign.size(); j++)
                             for (int jj = 0; jj < vertices; jj++)
                                   if ((geneM[GCVassign[j]][jj])>0)
-                                      sg=sg+ ((mGenm[g][GCVassign[j]])*(geneM[GCVassign[j]][jj])*((mPaa[k][GCVassign[j]]-mPaa[k][jj])*(mPaa[k][GCVassign[j]]-mPaa[k][jj])));
+                                      sg=sg+((mGenm[g][GCVassign[j]])*(geneM[GCVassign[j]][jj])*((mPaa[k][GCVassign[j]]-mPaa[k][jj])*(mPaa[k][GCVassign[j]]-mPaa[k][jj])));
                            se[k][g]=(sh+sg);
                            for (int j = 0; j < GCSassign.size(); j++)
                             for (int jj = 0; jj < vertices; jj++)
                                  if ((geneM[GCSassign[j]][jj])>0)
                                       ss=ss+((mGenm[g][GCSassign[j]])*(geneM[GCSassign[j]][jj])*((mPaa[k][GCSassign[j]]-mPaa[k][jj])*(mPaa[k][GCSassign[j]]-mPaa[k][jj])));
                            co[k][g]=(se[k][g]+ss)/N;
-                           se[k][g]=(sh+sg)/Nse;
+                           se[k][g]=se[k][g]/Nse;
                        }
                  }
      outs.push_back(se);
@@ -242,7 +262,6 @@ vector<vector<vector<double> > >GraphGC::gcPart(int N, vector<int> Nch, vector< 
                   if ((geneM[GCSgcassign[i]][ii])>0)
                     sh=sh+ (geneM[GCSgcassign[i]][ii]*((mPaa[k][GCSgcassign[i]]-mPaa[k][ii])*(mPaa[k][GCSgcassign[i]]-mPaa[k][ii]))); //for the sgc
         se[k]=s/Nch[0];
-        sco[k]=(s+sh)/N;
         for (int c = 0; c < codes.size(); c++)
          {
                 double sp=0, sb=0, ss=0;
@@ -254,15 +273,14 @@ vector<vector<vector<double> > >GraphGC::gcPart(int N, vector<int> Nch, vector< 
                    for (int ii = 0; ii < vertices; ii++)
                          if ((geneM[GCBassign[c][f]][ii])>0)
                          sb=sb+ (geneM[GCBassign[c][f]][ii]*((mPaa[k][GCBassign[c][f]]-mPaa[k][ii])*(mPaa[k][GCBassign[c][f]]-mPaa[k][ii])));
-                 scp[k][c]=sco[k]-(sp+sb);
                  for (int f = 0; f < GCSassign.size(); f++)
                    for (int ii = 0; ii < vertices; ii++)
                          if ((geneM[GCSassign[c][f]][ii])>0)
                           ss=ss+ (geneM[GCSassign[c][f]][ii]*((mPaa[k][GCSassign[c][f]]-mPaa[k][ii])*(mPaa[k][GCSassign[c][f]]-mPaa[k][ii])));
-                  sce[k][c]=(scp[k][c]-ss)/Nch[c];
-                  scp[k][c]=scp[k][c]/N;
-
-                                                }
+                  sce[k][c]=((s+sh)-sp+sb-ss)/Nch[c];
+                  scp[k][c]=((s+sh)-sp+sb)/N;
+                                }
+          sco[k]=(s+sh)/N;
      }
    for (int f = 0; f < mPaa.size(); f++) {
          scp[f][GCBassign.size()]=se[f];
@@ -291,10 +309,11 @@ vector<vector<vector<double> > > GraphGC::mePart(int N, vector<int> Nbse, double
    {
          for (int i = 0; i< 20; i++)
              for (int ii = 0; ii< 20; ii++) sb[k]=sb[k]+((mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii]));
+
          for (int c = 0; c < nc.size(); c++)
          {
              for (int i = 0; i< 20; i++)
-             for (int ii = 0; ii< 20; ii++) se[k][c]=se[k][c]+ (nc[c][i]*nc[c][ii]*((mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii])));
+             for (int ii = 0; ii< 20; ii++) se[k][c]=se[k][c]+(nc[c][i]*nc[c][ii]*((mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii])));
 
              for (int i = 0; i< nsc[c].size(); i++)
              for (int ii = 0; ii< 20; ii++)
@@ -309,9 +328,60 @@ vector<vector<vector<double> > > GraphGC::mePart(int N, vector<int> Nbse, double
                  sed=sed+geneM[nsc[c][i]][ii];
                  Tse[c]=  Tco-sed;
   for (int k = 0; k < mPaa.size(); k++)
-   {   mb[k][c]=(Tbc[c]*sb[k])/(Nbse[c]*380);
+   {
+       mb[k][c]=(Tbc[c]*sb[k])/(Nbse[c]*380);
        mse[k][c]=((Tse[c])*(se[k][c]))/(Nbse[c]*(64-nsc[c].size())*(63-nsc[c].size()));
-       mco[k][c]=(Tco*sco[k][c])/(N*4032);
+       mco[k][c]=(Tco*(sco[k][c]+se[k][c]))/(N*4032);
+        }
+            }
+      vector<vector<vector<double> > > outs;
+       outs.push_back(mb);
+       outs.push_back(mse);
+       outs.push_back(mco);
+       return outs;
+ }
+
+
+
+ vector<vector<vector<double> > > GraphGC::meGPart(int N, int Nbse,vector< vector<double> > ng, vector< vector<double> > mPaa,  vector<int> nc, vector<int>nsc,  vector<double> Tbc)
+{
+  double Tse;
+  vector<double> sb(20, 0);
+  vector<vector<double> > se(20, 0));
+  vector<vector<double> > sco(nsc.size(), 0);
+   vector<vector<double> > mb(mPaa.size(), vector<double>(ng.size(), 0));
+  vector<vector<double> > mse(mPaa.size(), vector<double>(ng.size(), 0));
+  vector<vector<double> > mco(mPaa.size(), vector<double>(ng.size(), 0));
+  //nsc vector per code of stoppositions, nc number of aas per cod
+
+  for (int k = 0; k < mPaa.size(); k++)
+   {
+     for (int i = 0; i< 20; i++)
+     for (int ii = 0; ii< 20; ii++) sb[k]=sb[k]+((mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii]));
+
+     for (int i = 0; i< 20; i++)
+     for (int ii = 0; ii< 20; ii++) se[k]=se[k]+(nc[i]*nc[ii]*((mPaa[k][i]-mPaa[k][ii])*(mPaa[k][i]-mPaa[k][ii])));
+
+     for (int i = 0; i< nsc.size(); i++)
+     for (int ii = 0; ii< 20; ii++) sco[k]=se[k]+(nc[ii]*(mPaa[k][nsc[i]]-mPaa[k][ii])*(mPaa[k][nsc[i]]-mPaa[k][ii]));
+
+     }
+  for (int g = 0; g< ng.size(); g++)
+   {
+       double sed=0;
+       for (int i = 0; i< nsc.size(); i++)
+             for (int ii = 0; ii< vertices; ii++)
+                 sed=sed+(ng[g][nsc[i]]*geneM[nsc[i]][ii]);
+       double ed=0;
+       for (int i = 0; i< vertices; i++)
+             for (int ii = 0; ii< vertices; ii++)
+                 ed=ed+(ng[g][i]*geneM[i][ii]);
+                 Tse= ed-sed;
+  for (int k = 0; k < mPaa.size(); k++)
+   {
+       mb[k][g]=(Tbc[g]*sb[k])/(Nbse*380);
+       mse[k][g]=((Tse)*(se[k]))/(Nbse*(64-nsc.size())*(63-nsc.size()));
+       mco[k][g]=(ed*(sco[k]+se[k]))/(N*4032);
         }
             }
       vector<vector<vector<double> > > outs;
@@ -558,8 +628,7 @@ vector <double>  GraphGC::allMeanSuppresors(vector <double> Paa,vector< string >
   return Paa;
  }
 
-
-GraphGC::GraphGC(vector <double>  &Paa, vector <string> &GCodes, int vert, int gc, int p, int s, int v){
+GraphGC::GraphGC(vector <double>  &Paa, vector <string> &GCodes, int suppr, int ub, int vert, int gc, int p, int s, int v){
   /*  p=0 s=0 v=1  transv model
     p=0 s=1 v=0    trans model
     p=3 s=1 v=1    3 pos model
@@ -569,6 +638,7 @@ GraphGC::GraphGC(vector <double>  &Paa, vector <string> &GCodes, int vert, int g
     gc=0  block model
     gc=1  sense model
     gc=2  codon model
+    ub=0  biased ub 1 unbiased
     */
   vertices=vert;//for sgc 64 61 20
   double d, da1, da2;
@@ -576,9 +646,11 @@ GraphGC::GraphGC(vector <double>  &Paa, vector <string> &GCodes, int vert, int g
   pair<int,char> po, po2;
   string alp=GCodes[0], gcode=GCodes[0];
   Paa=insert20(Paa);
-  Paa64=P20ToP64(alp, Paa);
-  Paa64=allMeanSuppresors(Paa64,GCodes);
-
+  if (suppr==0) Paa64=P20ToP64(alp, Paa);
+  else {
+      Paa64=P20ToP64(alp, Paa);
+      Paa64=allMeanSuppresors(Paa64,GCodes);
+                 }
   geneM = new double*[vertices];
     phenoM = new double*[vertices];
     for (int r = 0; r< vertices; r++) {
@@ -619,60 +691,196 @@ GraphGC::GraphGC(vector <double>  &Paa, vector <string> &GCodes, int vert, int g
        if ((p==3)||(p==0)&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]!=GCodes[4][ii])){
 
            if ((s==1)&&(transition(GCodes[4][i], GCodes[4][ii]))){
-                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii]))
-                    setW(i, ii, weights[2][0]);
-                if (gc==2)
-                    setW(i, ii, weights[2][0]);
-                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii])))
-                    setW(i, ii, weights[2][0]);
+                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii])){
+                    if (ub==0) setW(i, ii, weights[2][0]);
+                    else       setW(i, ii, 1);}
+                if (gc==2){
+                    if (ub==0) setW(i, ii, weights[2][0]);
+                    else       setW(i, ii, 1);}
+                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii]))) {
+                    if (ub==0) setW(i, ii, weights[2][0]);
+                    else       setW(i, ii, 1);}
                 }
           if ((v==1)&&(transversion(GCodes[4][i], GCodes[4][ii]))){
-                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii]))
-                    setW(i, ii, weights[2][1]);
-                if (gc==2)
-                    setW(i, ii, weights[2][1]);
-                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii])))
-                    setW(i, ii, weights[2][1]);
+                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii])) {
+                    if (ub==0) setW(i, ii, weights[2][1]);
+                    else       setW(i, ii, 1);  }
+                if (gc==2) {
+                    if (ub==0) setW(i, ii, weights[2][1]);
+                    else       setW(i, ii, 1); }
+                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii]))) {
+                    if (ub==0) setW(i, ii, weights[2][1]);
+                    else       setW(i, ii, 1); }
                 }
           }
        if (((p==2)||(p==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[3][i]!=GCodes[3][ii])) {
 
            if ((s==1)&&(transition(GCodes[3][i], GCodes[3][ii]))){
-                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii]))
-                    setW(i, ii, weights[1][0]);
-                if (gc==2)
-                    setW(i, ii, weights[1][0]);
-                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii])))
-                    setW(i, ii, weights[1][0]);
+                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii])){
+                    if (ub==0) setW(i, ii, weights[1][0]);
+                    else       setW(i, ii, 1); }
+                if (gc==2){
+                   if (ub==0) setW(i, ii, weights[1][0]);
+                     else     setW(i, ii, 1); }
+                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii]))) {
+                     if (ub==0) setW(i, ii, weights[1][0]);
+                     else       setW(i, ii, 1); }
             }
           if ((v==1)&&(transversion(GCodes[3][i], GCodes[3][ii]))){
-                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii]))
-                    setW(i, ii, weights[1][1]);
-                if (gc==2)
-                    setW(i, ii, weights[1][1]);
-                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii])))
-                    setW(i, ii, weights[1][1]);
-          }
-
+                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii])) {
+                    if (ub==0) setW(i, ii, weights[1][1]);
+                    else       setW(i, ii, 1); }
+                if (gc==2) {
+                   if (ub==0) setW(i, ii, weights[1][1]);
+                   else       setW(i, ii, 1); }
+                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii]))) {
+                   if (ub==0) setW(i, ii, weights[1][1]);
+                   else       setW(i, ii, 1); }
+                             }
                }
          if (((p==1)||(p==0))&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[2][i]!=GCodes[2][ii])) {
 
            if ((s==1)&&(transition(GCodes[2][i], GCodes[2][ii]))){
-                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii]))
-                    setW(i, ii, weights[0][0]);
-                if (gc==2)
-                    setW(i, ii, weights[0][0]);
-                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii])))
-                    setW(i, ii, weights[0][0]);
+                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii])){
+                    if (ub==0) setW(i, ii, weights[0][0]);
+                    else       setW(i, ii, 1); }
+                if (gc==2){
+                    if (ub==0) setW(i, ii, weights[0][0]);
+                    else       setW(i, ii, 1); }
+                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii]))){
+                    if (ub==0) setW(i, ii, weights[0][0]);
+                    else       setW(i, ii, 1); }
             }
           if ((v==1)&&(transversion(GCodes[2][i], GCodes[2][ii]))){
 
-                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii]))
-                    setW(i, ii, weights[0][1]);
-                if (gc==2)
-                    setW(i, ii, weights[0][1]);
-                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii])))
-                    setW(i, ii, weights[0][1]);
+                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii])){
+                    if (ub==0) setW(i, ii, weights[0][1]);
+                    else       setW(i, ii, 1); }
+                if (gc==2){
+                    if (ub==0) setW(i, ii, weights[0][1]);
+                    else       setW(i, ii, 1); }
+                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii]))){
+                    if (ub==0) setW(i, ii, weights[0][1]);
+                    else       setW(i, ii, 1); }
+                                  }
+                     }
+    }
+
+}
+}
+GraphGC::GraphGC(vector <double>  &codfreq, vector <double>  &Paa, vector <string> &GCodes, int suppr, int ub, int vert, int gc, int p, int s, int v){
+  /*  p=0 s=0 v=1  transv model
+    p=0 s=1 v=0    trans model
+    p=3 s=1 v=1    3 pos model
+    p=2 s=1 v=1    2 pos model
+    p=1 s=1 v=1    1 pos model         vert 64 gc 2 p=1 s=1 v=1
+    p=0 s=1 v=1     tot model
+    gc=0  block model
+    gc=1  sense model
+    gc=2  codon model
+    ub=0  biased ub 1 unbiased
+    */
+  vertices=vert;//for sgc 64 61 20
+  double d, da1, da2;
+  vector <double> Paa64;
+  pair<int,char> po, po2;
+  string alp=GCodes[0], gcode=GCodes[0];
+  Paa=insert20(Paa);
+  if (suppr==0) Paa64=P20ToP64(alp, Paa);
+  else {
+      Paa64=P20ToP64(alp, Paa);
+      Paa64=allMeanSuppresors(Paa64,GCodes);
+                 }
+  geneM = new double*[vertices];
+    phenoM = new double*[vertices];
+    for (int r = 0; r< vertices; r++) {
+        geneM[r] = new double[vertices];
+        phenoM[r] = new double[vertices];
+        for (int c = 0; c < vertices; c++) {
+            geneM[r][c] = 0;
+            phenoM [r][c] = 0;
+        }
+    }
+
+ for (int i = 0; i < GCodes[0].length(); i++)
+   {
+    for (int ii = 0; ii < GCodes[0].size(); ii++)
+     {
+        //3rst pos
+       if ((p==3)||(p==0)&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]!=GCodes[4][ii])){
+
+           if ((s==1)&&(transition(GCodes[4][i], GCodes[4][ii]))){
+                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii])){
+                    if (ub==0) setWG(i, ii, weights[2][0], codfreq[i]);
+                    else       setW(i, ii, codfreq[i]);}
+                if (gc==2){
+                    if (ub==0) setW(i, ii, weights[2][0], codfreq[i]);
+                    else       setW(i, ii, codfreq[i]);}
+                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii]))) {
+                    if (ub==0) setW(i, ii, weights[2][0], codfreq[i]);
+                    else       setW(i, ii, codfreq[i]);}
+                }
+          if ((v==1)&&(transversion(GCodes[4][i], GCodes[4][ii]))){
+                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii])) {
+                    if (ub==0) setW(i, ii, weights[2][1], codfreq[i]);
+                    else       setW(i, ii, codfreq[i]);  }
+                if (gc==2) {
+                    if (ub==0) setW(i, ii, weights[2][1], codfreq[i]);
+                    else       setW(i, ii, codfreq[i]); }
+                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii]))) {
+                    if (ub==0) setW(i, ii, weights[2][1], codfreq[i]);
+                    else       setW(i, ii, codfreq[i]); }
+                }
+          }
+       if (((p==2)||(p==0))&&(GCodes[2][i]==GCodes[2][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[3][i]!=GCodes[3][ii])) {
+
+           if ((s==1)&&(transition(GCodes[3][i], GCodes[3][ii]))){
+                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii])){
+                    if (ub==0) setW(i, ii, weights[1][0], codfreq[i]);
+                    else       setW(i, ii, codfreq[i]); }
+                if (gc==2){
+                   if (ub==0) setW(i, ii, weights[1][0], codfreq[i]);
+                     else     setW(i, ii, codfreq[i]); }
+                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii]))) {
+                     if (ub==0) setW(i, ii, weights[1][0], codfreq[i]);
+                     else       setW(i, ii, codfreq[i]); }
+            }
+          if ((v==1)&&(transversion(GCodes[3][i], GCodes[3][ii]))){
+                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii])) {
+                    if (ub==0) setW(i, ii, weights[1][1], codfreq[i]);
+                    else       setW(i, ii, codfreq[i]); }
+                if (gc==2) {
+                   if (ub==0) setW(i, ii, weights[1][1], codfreq[i]);
+                   else       setW(i, ii, codfreq[i]); }
+                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii]))) {
+                   if (ub==0) setW(i, ii, weights[1][1], codfreq[i]);
+                   else       setW(i, ii, codfreq[i]); }
+                             }
+               }
+         if (((p==1)||(p==0))&&(GCodes[3][i]==GCodes[3][ii])&&(GCodes[4][i]==GCodes[4][ii])&&(GCodes[2][i]!=GCodes[2][ii])) {
+
+           if ((s==1)&&(transition(GCodes[2][i], GCodes[2][ii]))){
+                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii])){
+                    if (ub==0) setW(i, ii, weights[0][0], codfreq[i]);
+                    else       setW(i, ii, codfreq[i]); }
+                if (gc==2){
+                    if (ub==0) setW(i, ii, weights[0][0], codfreq[i]);
+                    else       setW(i, ii, codfreq[i]); }
+                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii]))){
+                    if (ub==0) setW(i, ii, weights[0][0], codfreq[i]);
+                    else       setW(i, ii, codfreq[i]); }
+            }
+          if ((v==1)&&(transversion(GCodes[2][i], GCodes[2][ii]))){
+
+                if ((gc==0)&&(GCodes[0][i]!=GCodes[0][ii])){
+                    if (ub==0) setW(i, ii, weights[0][1], codfreq[i]);
+                    else       setW(i, ii, codfreq[i]); }
+                if (gc==2){
+                    if (ub==0) setW(i, ii, weights[0][1], codfreq[i]);
+                    else       setW(i, ii, codfreq[i]); }
+                if ((gc==1)&&(!STOP(GCodes[0][i], GCodes[0][ii]))){
+                    if (ub==0) setW(i, ii, weights[0][1], codfreq[i]);
+                    else       setW(i, ii, codfreq[i]); }
                                   }
                      }
     }
@@ -685,7 +893,6 @@ vector <int>  GraphGC::BChanges(const vector <string> &GCodes, int vert, int gc,
   vertices=vert;//for sgc 64 61 20
   //vector <double> Paa64;
   vector <int> ChangesCount;
-
   //Paa64=P20ToP64(GCodes[0], Paa);
   //int trans0p3=0, trans1p3=0, trans0p2=0, trans1p2=0, trans0p1=0, trans1p1=0;
   //int tranv0p3=0, tranv1p3=0, tranv0p2=0, tranv1p2=0, tranv0p1=0, tranv1p1=0;
