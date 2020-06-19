@@ -5,14 +5,14 @@
 #include <set>
 #include "GraphGC.h"
 using namespace std;
-
+//Genetic robustness
 GraphGC::GraphGC(int n):vertices(n)
 {
     geneM = new double*[vertices];
     phenoM = new double*[vertices];
     for (int r = 0; r< vertices; r++) {
-        geneM[r] = new double[vertices];
-        phenoM[r] = new double[vertices];
+        geneM[r] = new double[vertices];    //genetic graph
+        phenoM[r] = new double[vertices];    //phenotypic distance graph
         for (int c = 0; c < vertices; c++) {
             geneM[r][c] = 0;
             phenoM [r][c] = 0;
@@ -75,14 +75,16 @@ GraphGC& GraphGC::operator=(const GraphGC& g)
     }
     return *this;
 }
-
+//b weight setting for genetic graph
  void GraphGC::setWG(int i, int j, double w, double g) {
                   geneM[i][j] = geneM[i][j]+(w*g);
     }
+ //weight setting for genetic graph
  void GraphGC::setW(int i, int j, double w=0) {
                   geneM[i][j] = geneM[i][j]+w;
                  // geneM[j][i] = geneM[j][i]+w;
     }
+ //phenotypic distance setting
  void GraphGC::setD(int i, int j, double d=0) {
                   phenoM[i][j] = d;
                   //phenoM[j][i] = d;
@@ -125,15 +127,17 @@ double GraphGC::getGW(int i, int j) {
 double GraphGC::getPW(int i, int j) {
                   return phenoM[i][j];
     }
-
+//inner prod projecting
 double GraphGC::getProd(int i, int j) {
                   return ((phenoM[i][j]*geneM[i][j]));
     }
+    //Frob/N
 double GraphGC::SumProd (int N){
   double s=0;
   for (int i = 0; i < vertices; i++)
    {
-    for (int ii = i+1; ii < vertices; ii++)
+	//for (int ii = i+1; ii < vertices; ii++)
+    for (int ii = 0; ii < vertices; ii++)
      {
       s=s+this->getProd(i, ii);
          }
@@ -184,7 +188,7 @@ double GraphGC::SumPhenoM(){
          }
       return s;
     }
-
+//homogeneous and heterogenous codon block part
 vector<vector<vector<double> > >GraphGC::hPart(int N, int Nse, vector< vector<double> > mPaa, vector< vector<double> > mGenm,  vector<int> GCHassign,  vector<int> GCVassign,  vector<int> GCSassign){
 //P2
 vector<vector<vector<double> > > outs;
@@ -215,7 +219,7 @@ vector<vector<double> > co(mPaa.size(), vector<double>(mGenm[0].size(), 0));
      outs.push_back(co);
     return outs;
     }
-
+//GC p-comparing
 vector< vector<int> > GraphGC::PairCompGC(vector<int> AAGCnum1, vector<int> AAGCnum2){
   vector< vector<int> > GComp;
   vector< int> GCommon, GCdiff;
@@ -231,7 +235,7 @@ vector< vector<int> > GraphGC::PairCompGC(vector<int> AAGCnum1, vector<int> AAGC
 
    return GComp;
     }
-
+//n of sb changes
 int GraphGC::PartChanges(vector<int> AAssign){
   int changes=0;
   for (int i = 0; i < vertices; i++)
@@ -243,7 +247,7 @@ int GraphGC::PartChanges(vector<int> AAssign){
        }
    return changes;
     }
-
+// gc p comparison part
 vector<vector<vector<double> > >GraphGC::gcPart(int N, vector<int> Nch, vector< vector<double> > mPaa, vector< vector<int> > codes, vector<int>  GCSgcassign, vector< vector<int> >GCBassign,  vector< vector<int> >GCPassign,  vector< vector<int> > GCSassign)
 {
   vector<double> se(mPaa.size(), 0);
@@ -293,6 +297,8 @@ vector<vector<vector<double> > >GraphGC::gcPart(int N, vector<int> Nch, vector< 
 
    return outs;
 }
+// nmean hh part
+
 vector<vector<vector<double> > > GraphGC::mePart(int N, vector<int> Nbse, double Tco, vector< vector<double> > mPaa,  vector< vector<int> > nc, vector< vector<int> > nsc,  vector<double> Tbc)
 {
   double sed;
@@ -341,7 +347,7 @@ vector<vector<vector<double> > > GraphGC::mePart(int N, vector<int> Nbse, double
        return outs;
  }
 
-
+//mean GC p comp part
 
  vector<vector<vector<double> > > GraphGC::meGPart(int N, int Nbse,vector< vector<double> > ng, vector< vector<double> > mPaa,  vector<int> nc, vector<int>nsc,  vector<double> Tbc)
 {
@@ -390,6 +396,7 @@ vector<vector<vector<double> > > GraphGC::mePart(int N, vector<int> Nbse, double
        outs.push_back(mco);
        return outs;
  }
+ //var GC hh part
  vector<vector<vector<double> > > GraphGC::vaPart(vector<vector<vector<double> > > outs, vector<int> Nbse, int N, double Tco, vector< vector<double> > mPaa, vector< vector<int> > nc, vector< vector<int> > nsc,  vector< vector<double> > Tb)
  {
      double T4,s=0, ss=0, sw=0, ssw0=0,ssw=0, ssw2=0;
