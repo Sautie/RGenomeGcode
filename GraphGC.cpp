@@ -5,7 +5,7 @@
 #include <set>
 #include "GraphGC.h"
 using namespace std;
-//Genetic robustness
+//computing the Genetic robustness
 GraphGC::GraphGC(int n):vertices(n)
 {
     geneM = new double*[vertices];
