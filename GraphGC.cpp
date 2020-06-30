@@ -99,6 +99,7 @@ void GraphGC::clearW() {
     for (int ii = 0; ii < vertices; ii++) geneM[i][ii] = 0;
      }
   }
+//conversion function 
 void GraphGC::toADJL()
  {
     for (int i = 0; i < vertices; i++){
@@ -131,7 +132,7 @@ double GraphGC::getPW(int i, int j) {
 double GraphGC::getProd(int i, int j) {
                   return ((phenoM[i][j]*geneM[i][j]));
     }
-    //Frob/N
+    //(Frob prod)/N, N: number of single base changes
 double GraphGC::SumProd (int N){
   double s=0;
   for (int i = 0; i < vertices; i++)
@@ -144,7 +145,7 @@ double GraphGC::SumProd (int N){
          }
     return (s/N);
 }
-
+// separating invariant from variable part
 int GraphGC::GCPart(vector<int> GCassign, vector<int> GCVassign, int iv=0){  //iv=0 GCassign: invariant set of nodes, iv=1 variable part
    int LC;
    for (int i = 0; i < vertices; i++)
@@ -188,7 +189,7 @@ double GraphGC::SumPhenoM(){
          }
       return s;
     }
-//homogeneous and heterogenous codon block part
+//homogeneous and heterogenous codon block partitioning
 vector<vector<vector<double> > >GraphGC::hPart(int N, int Nse, vector< vector<double> > mPaa, vector< vector<double> > mGenm,  vector<int> GCHassign,  vector<int> GCVassign,  vector<int> GCSassign){
 //P2
 vector<vector<vector<double> > > outs;
@@ -247,7 +248,7 @@ int GraphGC::PartChanges(vector<int> AAssign){
        }
    return changes;
     }
-// gc p comparison part
+// gc pairwise comparison partitioning
 vector<vector<vector<double> > >GraphGC::gcPart(int N, vector<int> Nch, vector< vector<double> > mPaa, vector< vector<int> > codes, vector<int>  GCSgcassign, vector< vector<int> >GCBassign,  vector< vector<int> >GCPassign,  vector< vector<int> > GCSassign)
 {
   vector<double> se(mPaa.size(), 0);
@@ -297,7 +298,7 @@ vector<vector<vector<double> > >GraphGC::gcPart(int N, vector<int> Nch, vector< 
 
    return outs;
 }
-// nmean hh part
+// null mean hh partitioning
 
 vector<vector<vector<double> > > GraphGC::mePart(int N, vector<int> Nbse, double Tco, vector< vector<double> > mPaa,  vector< vector<int> > nc, vector< vector<int> > nsc,  vector<double> Tbc)
 {
@@ -347,7 +348,7 @@ vector<vector<vector<double> > > GraphGC::mePart(int N, vector<int> Nbse, double
        return outs;
  }
 
-//mean GC p comp part
+//null mean GC pairwise comparison partitioining
 
  vector<vector<vector<double> > > GraphGC::meGPart(int N, int Nbse,vector< vector<double> > ng, vector< vector<double> > mPaa,  vector<int> nc, vector<int>nsc,  vector<double> Tbc)
 {
@@ -396,7 +397,7 @@ vector<vector<vector<double> > > GraphGC::mePart(int N, vector<int> Nbse, double
        outs.push_back(mco);
        return outs;
  }
- //var GC hh part
+ //null var GC/Genome hh partitioining
  vector<vector<vector<double> > > GraphGC::vaPart(vector<vector<vector<double> > > outs, vector<int> Nbse, int N, double Tco, vector< vector<double> > mPaa, vector< vector<int> > nc, vector< vector<int> > nsc,  vector< vector<double> > Tb)
  {
      double T4,s=0, ss=0, sw=0, ssw0=0,ssw=0, ssw2=0;
@@ -1122,7 +1123,8 @@ void GraphGC::print() {
       }
     }
 
-vector< double > GraphGC::permGenCodes(string alp, const vector <double>  &CodBias, const vector <double>  &Faas, vector <double>  &Paa, const vector <string> &GCodes) {
+//permGenCodes
+vector< double > GraphGC::permGenRobustness(string alp, const vector <double>  &CodBias, const vector <double>  &Faas, vector <double>  &Paa, const vector <string> &GCodes) {
 
   int codonpos=0;
   pair<int,char> po, po2;
@@ -1596,7 +1598,8 @@ vector <double>  GraphGC::Reassign1(vector < vector <double> >GC201models, ofstr
     InputFile<<endl;
     return res3;
  }
-vector< double > GraphGC::permGenCodes64(string alp, const vector <double>  &CodBias, const vector <double>  &Faas,  const vector <string> &GCodes) {
+//permGenCodes64 
+vector< double > GraphGC::permGenRobustness64(string alp, const vector <double>  &CodBias, const vector <double>  &Faas,  const vector <string> &GCodes) {
  //Codbias, faas, fcod para cg64
   int codonpos=0;
   pair<int,char> po, po2;
@@ -1967,8 +1970,8 @@ int ntt1=0, ntt2=0, ntt3=0;
 
     return res;
  }
-
- vector< double > GraphGC::permGenCodes2(string alp, const vector <double>  &CodBias, const vector <double>  &Faas,  const vector <string> &GCodes) {
+//permGenCodes2 
+ vector< double > GraphGC::permGenRobustness2(string alp, const vector <double>  &CodBias, const vector <double>  &Faas,  const vector <string> &GCodes) {
   //weight factors for global mean and variance
   int codonpos=0;
   pair<int,char> po, po2;
